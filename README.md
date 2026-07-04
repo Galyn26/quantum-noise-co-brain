@@ -137,3 +137,28 @@ def get_simulated_qpu_telemetry(timestamp):
 ```
 * **The Integration Project**: If you have an active IBM Quantum API token, rewrite this function to authenticate via `qiskit-ibm-runtime`, scrape the live backend calibration properties of a machine like `ibm_brisbane`, and pass real-world chip telemetry straight into the simulator loop!
 
+## 📊 Running the Advanced Medical Data Sandbox
+
+If you want to move past the simulated baseline and see how the Co-Brain handles real-world medical data, you can execute the Phase 1 and Phase 2 data pipelines. These scripts use the **Breast Cancer Wisconsin Dataset** to benchmark true classification stability.
+
+### 1. Install Data Dependencies
+Ensure you have `scikit-learn` installed in your virtual environment:
+```bash
+pip install scikit-learn
+```
+
+### 2. Execute Phase 1: Map the Corruption Baseline
+
+Run the data mapper to compress the medical features down to 2 dimensions using PCA, encode them into qubits, and watch how classification accuracy naturally degrades as noise increases:
+```python
+python3 phase1_data_mapper.py
+```
+
+### 3. Execute Phase 2: Run the Co-Brain Mitigation Battle
+
+Run the comparative benchmarking engine to see the native unmitigated path go head-to-head against the Co-Brain's active Pauli-Twirling middleware under a critical 12% drift:
+```python
+python3 phase2_cobrain_mitigator.py
+```
+* **What you're watching**: The Co-Brain dynamically intercepts the deep processing layers and applies randomized gate twirling, actively rescuing data points from fatal classification inversions in real time.
+
