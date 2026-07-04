@@ -2,7 +2,7 @@ import time
 import random
 from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator
-from qiskit_aer.noise import NoiseModel, DepolarizingError
+from qiskit_aer.noise import NoiseModel, depolarizing_error
 
 def get_simulated_qpu_telemetry(timestamp):
     """
@@ -18,7 +18,7 @@ def build_bell_state_circuit():
     """Initializes a standard 2-qubit entangled state."""
     qc = QuantumCircuit(2)
     qc.h(0)
-    qc.cnot(0, 1)
+    qc.cx(0, 1)
     qc.measure_all()
     return qc
 
@@ -29,10 +29,9 @@ def inject_dynamical_decoupling(qc):
     """
     mitigated_qc = QuantumCircuit(2)
     mitigated_qc.h(0)
-    # Co-Brain intercepts before the CNOT to stabilize the phase
     mitigated_qc.x(1)
     mitigated_qc.x(1)
-    mitigated_qc.cnot(0, 1)
+    mitigated_qc.cx(0, 1)
     mitigated_qc.measure_all()
     return mitigated_qc
 
@@ -53,8 +52,12 @@ def run_telemetry_loop(epochs=5):
         
         # 2. Build the hardware noise profile dynamically based on telemetry
         noise_model = NoiseModel()
-        error_gate = DepolarizingError(gate_error, 1)
-        noise_model.add_all_qubit_quantum_error(error_gate, ['h', 'cx', 'x'])
+
+        error1_gate = depolarizing_error(gate_error, 1)
+        error2_gate = depolarizing_error(gate_error, 2)
+
+        noise_model.add_all_qubit_quantum_error(error1_gate, ['h', 'x'])
+        noise_model.add_all_qubit_quantum_error(error2_gate, ['cx'])
         
         # 3. Co-Brain Decision Matrix (The Optimization Threshold)
         # If error spikes past 4.5%, active mitigation is compiled into the routing path
