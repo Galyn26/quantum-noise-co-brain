@@ -62,6 +62,13 @@ source env/bin/activate
 pip install --upgrade pip
 pip install qiskit qiskit-aer
 ```
+### 2. Running the Co-Brain Feedback Simulator
+
+To watch the Co-Brain actively scrape telemetry, monitor chip drift, and execute dynamic pre-execution circuit mitigation, run the live control loop skeleton:
+
+```bash
+python3 cobrain_orchestrator.py
+```
 ## Run the Diagnostic
 
 Execute the baseline script to generate an ideal versus a noisy quantum environment
