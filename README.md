@@ -162,3 +162,12 @@ python3 phase2_cobrain_mitigator.py
 ```
 * **What you're watching**: The Co-Brain dynamically intercepts the deep processing layers and applies randomized gate twirling, actively rescuing data points from fatal classification inversions in real time.
 
+### 4. Execute Phase 3: Pull Live Production Hardware Telemetry
+Query real, utility-scale physical quantum processors (like the Eagle-architecture `ibm_fez`) over the IBM Quantum Cloud to scrape live hardware calibration metrics:
+```bash
+python3 ibm_telemetry_provider.py
+```
+
+* **What you're watching**: The telemetry provider dynamically handshakes with your IBM open-tier account, filters out simulators, identifies the machine's native physical entangling gate (cz, ecr, or cx), and extracts the real-time physical error float from the active hardware target layout.
+* **The closed loop connection**: In production, these real-time floats feed directly back into the Co-Brain's middleware orchestration layer to trigger the Phase 2 mitigation layers automatically when physical chip stability degrades.
+
