@@ -45,3 +45,45 @@ This repository is intentionally, deeply open to public contribution. **We need 
 
 ---
 *Inspired by the absolute drive to make science fiction reality. Built in a home sandbox.*
+
+## 🧪 Quickstart: Running the Noise Baseline
+
+To understand exactly what bottleneck this project is solving without needing a physics degree, you can run a local baseline simulation on your machine to watch quantum decoherence happen in real time.
+
+### 1. Prerequisites & Installation
+Ensure you have Python 3.10+ and a virtual environment activated on your node:
+
+```bash
+# Create and activate environment
+python3 -m venv env
+source env/bin/activate
+
+# Install the exact execution dependencies
+pip install --upgrade pip
+pip install qiskit qiskit-aer
+```
+## Run the Diagnostic
+
+Execute the baseline script to generate an ideal versus a noisy quantum environment
+
+```bash
+python3 noise_baseline.py
+```
+## Interpreting the Telemetry Output
+
+When the script finishes, it outputs two distinct bitstring distributions. Here is what they actually mean:
+
+=== BASELINE TELEMETRY COMPILED ===
+Ideal Expected Output (Should be ~50/50 split of 00 and 11):
+   --> {'00': 519, '11': 481}
+
+Noisy Output (Notice the random corruptions/shifts leaking in):
+   --> {'11': 489, '00': 511}
+
+* **The Ideal Run**: We initialized a 2-qubit system and applied a Hadamard and a CNOT gate to put them into an entangled state. In a perfect universe, measuring these qubits should ONLY ever result in 00 or 11 (a perfect binary correlation)
+* **The Noisy Run**: We injected a simulated 5% Bit-Flip Drift Channel (mimicking real-world environmental noise on an IBM processor chip). Because the physical hardware is unstable, the qubits fluctuate, throwing errors into the final matrix.
+
+# The QCNB Objective:
+
+How do we write a predictive, data-driven "co-brain" framework that tracks these hardware shifts via live telemetry streams and dynamically routes or corrects the circuit instructions BEFORE execution, bypassing this corruption entirely?
+
