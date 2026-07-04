@@ -112,7 +112,7 @@ def inject_dynamical_decoupling(qc):
     mitigated_qc.x(1)
     ...
 ```
-* **The Challenge**: Can you write a sequence that lowers the `Maxtrix Leakage` percentage even further when the noise spike hits extreme levels (e.g., >10%)
+* **The Challenge**: Can you write a sequence that lowers the `Matrix Leakage` percentage even further when the noise spike hits extreme levels (e.g., >10%)
 
 ### 2. Tweak the Decision Threshold (The Brain's sensitivity)
 
@@ -121,11 +121,11 @@ Inside the `run_telemetry_loop`, there is a hardcoded threshold parameter that d
 ```python
 threshold = 0.045  # 4.5% Gate Error Rate
 ```
-* **The Expirement**: Try lowering this to 0.01 to make the compiler hyper-aggressive, or raise it to 0.08 to see how long the native hardware can survive high-noise states before the data completely corrupts.
+* **The Experiment**: Try lowering this to 0.01 to make the compiler hyper-aggressive, or raise it to 0.08 to see how long the native hardware can survive high-noise states before the data completely corrupts.
 
 ### 3. Hook it to live Telemetry Hardware
 
-Currently,` get_simulated_qpu_telemetry utilizes` a randomized sine-wave drift to model real-world environmental shifts.
+Currently,`get_simulated_qpu_telemetry` utilizes a randomized sine-wave drift to model real-world environmental shifts.
 
 * Where to look:
 
