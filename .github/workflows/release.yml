@@ -21,8 +21,8 @@ jobs:
             artifact_name: QuantumCoBrain-Linux-x64.tar.gz
             asset_path: QuantumCoBrain-Linux-x64.tar.gz
           - os: macos-latest
-            artifact_name: QuantumCoBrain-MacOS.dmg
-            asset_path: QuantumCoBrain-MacOS.dmg
+            artifact_name: QuantumCoBrain-MacOS.zip
+            asset_path: QuantumCoBrain-MacOS.zip
           - os: windows-latest
             artifact_name: QuantumCoBrain-Windows-x64.zip
             asset_path: QuantumCoBrain-Windows-x64.zip
@@ -81,7 +81,7 @@ jobs:
     - name: Package Mac Assets
       if: matrix.os == 'macos-latest'
       run: |
-        zip -r QuantumCoBrain-MacOS.dmg dist/QuantumCoBrain/
+        cd dist && zip -r ../QuantumCoBrain-MacOS.zip QuantumCoBrain/
 
     - name: Upload Native OS Asset to GitHub Release
       uses: softprops/action-gh-release@v2
