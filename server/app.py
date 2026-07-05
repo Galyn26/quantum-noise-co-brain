@@ -66,7 +66,9 @@ async def login_page(request: Request, error: bool = False):
 async def handle_login(username: str = Form(...), password: str = Form(...)):
     """Validates submitted user details and drops a session cookie."""
     if username == DEMO_USER and password == DEMO_PASS:
+        # Crucial Cloud Fix: Use a relative location instead of an absolute URL string
         response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        
         # Drop a secure session cookie inside the browser container
         response.set_cookie(
             key="quantum_session", 
@@ -76,7 +78,6 @@ async def handle_login(username: str = Form(...), password: str = Form(...)):
         )
         return response
     return RedirectResponse(url="/login?error=true", status_code=status.HTTP_303_SEE_OTHER)
-
 
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard(request: Request):
