@@ -34,7 +34,20 @@
         .modal-body ul { margin-left: 15px; margin-top: 5px; margin-bottom: 10px; }
         .modal-close { position: absolute; bottom: 15px; right: 15px; border: 1px solid #ff0055; color: #ff0055; background: transparent; padding: 5px 10px; cursor: pointer; font-size: 10px; }
         .modal-close:hover { background: rgba(255,0,85,0.15); }
-    </style>
+
+.user-profile-widget {
+    position: absolute;
+    top: 15px;
+    left: 320px; /* Positions it nicely next to the "LIVE HARDWARE" text */
+    font-size: 12px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+}
+.logout-btn:hover {
+    background-color: rgba(255, 85, 85, 0.2);
+}   
+ </style>
 </head>
 <body>
 
@@ -101,6 +114,10 @@
         </div>
     </div>
 
+<div class="user-profile-widget">
+    <span>Operator: <strong>{{ username }}</strong></span>
+    <a href="/logout" class="logout-btn" style="margin-left: 15px; color: #ff5555; text-decoration: none; border: 1px solid #ff5555; padding: 4px 8px; border-radius: 4px;">Wipe Session (Logout)</a>
+</div>
     <script>
         const container = document.getElementById('top-viewport');
         const scene = new THREE.Scene();
@@ -147,8 +164,10 @@
 
         let twirlingActive = true;
 
+let tuneTimeout;
+
 function syncInputs(type, val) {
-    // Keep both the visual slider and numerical box locked together
+    // Keep both the visual slider and numerical box locked together instantly
     if (type === 'noise') {
         document.getElementById('noise-slider').value = val;
         document.getElementById('noise-num').value = val;
@@ -156,60 +175,29 @@ function syncInputs(type, val) {
         document.getElementById('drift-slider').value = val;
         document.getElementById('drift-num').value = val;
     }
-    updateKnobs();
+    
+    // Instantly update the local HUD display text for responsive feedback
+    const noise = document.getElementById('noise-slider').value;
+    const drift = document.getElementById('drift-slider').value;
+    document.getElementById('vector-feed').innerText = `Noise Matrix: [${noise}]\nSub-lattice Drift: [${drift}%]\nTwirling Intercept: ${twirlingActive ? 'ENGAGED' : 'BYPASS'}`;
+
+    // Debounce the network request so it doesn't spam the FastAPI backend while dragging
+    clearTimeout(tuneTimeout);
+    tuneTimeout = setTimeout(updateKnobs, 150); 
 }
 
 async function updateKnobs() {
     const noise = document.getElementById('noise-slider').value;
     const drift = document.getElementById('drift-slider').value;
     
-    document.getElementById('vector-feed').innerText = `Noise Matrix: [${noise}]\nSub-lattice Drift: [${drift}%]\nTwirling Intercept: ${twirlingActive ? 'ENGAGED' : 'BYPASS'}`;
-
-    await fetch('/api/tune', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ noise_amplitude: parseFloat(noise), gate_drift: parseFloat(drift) })
-    });
-}
-
-        function toggleTwirling() {
-            twirlingActive = !twirlingActive;
-            const btn = document.getElementById('twirl-toggle');
-            btn.innerText = twirlingActive ? 'ACTIVE' : 'BYPASS';
-            btn.style.borderColor = twirlingActive ? '#00ff66' : '#ff0055';
-            btn.style.color = twirlingActive ? '#00ff66' : '#ff0055';
-            updateKnobs();
-        }
-
-        function downloadDataset() {
-            window.open('/api/download-dataset', '_blank');
-        }
-
-        function toggleModal(show) {
-            document.getElementById('help-modal').style.display = show ? 'flex' : 'none';
-        }
-
-        updateKnobs();
-
-        // Automatically pull live parameters from the backend every 1000ms
-async function syncFromBackend() {
     try {
-        const response = await fetch('/api/state');
-        const state = await response.json();
-        
-        // Update inputs only if the user isn't actively dragging them
-        if (document.activeElement !== document.getElementById('noise-slider') &&
-            document.activeElement !== document.getElementById('drift-slider')) {
-            
-            document.getElementById('noise-slider').value = state.noise_amplitude;
-            document.getElementById('noise-num').value = state.noise_amplitude;
-            document.getElementById('drift-slider').value = state.gate_drift;
-            document.getElementById('drift-num').value = state.gate_drift;
-            
-            document.getElementById('vector-feed').innerText = `Noise Matrix: [${state.noise_amplitude}]\nSub-lattice Drift: [${state.gate_drift}%]\nTwirling Intercept: ${twirlingActive ? 'ENGAGED' : 'BYPASS'}`;
-        }
+        await fetch('/api/tune', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ noise_amplitude: parseFloat(noise), gate_drift: parseFloat(drift) })
+        });
     } catch (err) {
-        console.error("Telemetry sync error:", err);
+        console.error("Failed to push tuning matrix parameters:", err);
     }
 }
 
