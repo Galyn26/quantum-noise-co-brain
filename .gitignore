@@ -1,4 +1,14 @@
+# 🔐 Local Environment Secrets & Data Layers
 .env
+quantum_operators.db
+server/quantum_operators.db
+
+# 🐍 Python Bytecode Caches
 __pycache__/
 server/__pycache__/
-server/quantum_operators.db
+*.pyc
+
+# 📦 PyInstaller Native Desktop Compiler Outputs
+build/
+dist/
+*.spec
