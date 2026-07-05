@@ -15,7 +15,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Spin up all three operating systems in parallel
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
@@ -38,7 +37,6 @@ jobs:
         python-version: '3.10'
         cache: 'pip'
 
-    # --- PLATFORM SPECIFIC DEPENDENCY SETUPS ---
     - name: [Linux] Install System Graphical & SQLite Headers
       if: matrix.os == 'ubuntu-latest'
       run: |
@@ -51,23 +49,27 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
 
-    # --- NATIVE COMPILATION STEP ---
-    - name: Compile App Binary via PyInstaller
-      shell: bash
+    # --- NATIVE COMPILATION STEPS (SPLIT TO PREVENT SYNTAX ERRORS) ---
+    - name: [Linux/Mac] Compile Native Binary
+      if: matrix.os != 'windows-latest'
       run: |
-        # On Windows, path separators use backslashes for data inclusion
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          DATA_SEP=";"
-        else
-          DATA_SEP=":"
-        fi
-        
         python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" \
           --collect-all "pysqlite3" \
           --collect-all "qtpy" \
           --collect-all "PyQt5" \
           --collect-all "PyQtWebEngine" \
-          --add-data "server${DATA_SEP}server" \
+          --add-data "server:server" \
+          server/desktop.py
+
+    - name: [Windows] Compile Native Exe
+      if: matrix.os == 'windows-latest'
+      run: |
+        python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" \
+          --collect-all "pysqlite3" \
+          --collect-all "qtpy" \
+          --collect-all "PyQt5" \
+          --collect-all "PyQtWebEngine" \
+          --add-data "server;server" \
           server/desktop.py
 
     # --- COMPRESSION & PACKAGING STEP ---
@@ -77,14 +79,12 @@ jobs:
 
     - name: [Windows] Package Zip Archive
       if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: Compress-Archive -Path dist\QuantumCoBrain\* -DestinationPath QuantumCoBrain-Windows-x64.zip
+      run: PowerShell-Command "Compress-Archive -Path dist\QuantumCoBrain\* -DestinationPath QuantumCoBrain-Windows-x64.zip"
 
     - name: [macOS] Package DMG Installer
       if: matrix.os == 'macos-latest'
       run: |
         pip install dmgbuild
-        # Quick fallback zip compression if full DMG generation tools aren't natively configured
         zip -r QuantumCoBrain-MacOS.dmg dist/QuantumCoBrain/
 
     # --- AUTOMATIC RELEASE LAYER ---
