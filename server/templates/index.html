@@ -37,8 +37,8 @@
 
 .user-profile-widget {
     position: absolute;
-    top: 15px;
-    left: 320px; /* Positions it nicely next to the "LIVE HARDWARE" text */
+    top: 45px; /* Bumped down to clear the header line completely */
+    left: 15px; /* Anchored straight to the left border edge */
     font-size: 12px;
     z-index: 10;
     display: flex;
@@ -53,13 +53,18 @@
 
 <!-- Top Half: 3D Visualization Space -->
 <div id="top-viewport">
-    <div class="btn-group">
-        <button id="help-btn" class="utility-btn" onclick="toggleModal(true)">❓ Operations Manual</button>
-        <button class="utility-btn" onclick="downloadDataset()">📁 Download Snapshot</button>
+    <!-- Cleaned Right Side Controls Group -->
+    <div class="btn-group" style="position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 12px; z-index: 10;">
+        <!-- 🌌 Sleek Switcher moved here safely out of the collision zone! -->
+        <a href="/sleek" style="background: transparent; border: 1px solid #ffcc00; color: #ffcc00; padding: 8px 14px; cursor: pointer; text-transform: uppercase; font-size: 11px; font-weight: bold; text-decoration: none;">🌌 Go Sleek</a>
+        
+        <button id="help-btn" class="utility-btn" onclick="toggleModal(true)" style="position: static;">❓ Operations Manual</button>
+        <button class="utility-btn" onclick="downloadDataset()" style="position: static;">📁 Download Snapshot</button>
     </div>
-    <div style="position: absolute; top: 15px; left: 15px; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 15px;">
-        <span>🛰️ LIVE HARDWARE REAL-TIME SIMULATOR</span>
-        <a href="/sleek" style="background: transparent; border: 1px solid #ffcc00; color: #ffcc00; padding: 4px 8px; cursor: pointer; text-transform: uppercase; font-size: 10px; font-weight: bold; text-decoration: none; border-radius: 3px;">🌌 GO SLEEK</a>
+    
+    <!-- Isolated Left Side Title Block -->
+    <div style="position: absolute; top: 15px; left: 15px; font-size: 14px; font-weight: bold; z-index: 10;">
+        🛰️ LIVE HARDWARE REAL-TIME SIMULATOR
     </div>
 </div>
 
