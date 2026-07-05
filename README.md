@@ -6,7 +6,48 @@ Welcome to **Project Co-Brain**. This is an open-source, local-to-cloud infrastr
 
 The goal of this project is to build an intelligent, predictive classical "co-brain" framework that sits inside a local containerized stack, scrapes live hardware telemetry from cloud quantum processing units (QPUs), and dynamically maps/orchestrates circuit routing to pre-emptively bypass hardware instability—specifically applied to high-dimensional medical imaging and molecular analysis.
 
+## 🚀 Download Quantum Co-Brain Desktop App
+
+Skip the terminal entirely! You can download the native, pre-compiled desktop app for your specific operating system directly from our latest release.
+
+### 📥 Step 1: Download for your OS
+Head over to the **[Latest GitHub Release](https://github.com/Galyn26/quantum-noise-co-brain/releases/latest)** and download the package matching your system:
+* 🐧 **Linux (x64):** `QuantumCoBrain-Linux-x64.tar.gz`
+* 🪟 **Windows (x64):** `QuantumCoBrain-Windows-x64.zip`
+* 🍏 **macOS:** `QuantumCoBrain-MacOS.dmg`
+
 ---
+
+### 🕹️ Step 2: Launch Instructions
+
+#### 🐧 Linux
+1. Extract the downloaded archive:
+   ```bash
+   tar -xzf QuantumCoBrain-Linux-x64.tar.gz
+   ```
+---
+
+Enter the directory and fire up the binary:
+    Bash
+
+    cd QuantumCoBrain
+    ./QuantumCoBrain
+
+🪟 Windows
+
+    Right-click QuantumCoBrain-Windows-x64.zip and select Extract All.
+
+    Open the extracted folder, find QuantumCoBrain.exe, and double-click to launch the cockpit.
+
+    💡 Note: If Windows SmartScreen shows a "Protected your PC" popup, click More Info -> Run Anyway (this occurs because the binary is freshly compiled and self-signed).
+
+🍏 macOS
+
+    Double-click QuantumCoBrain-MacOS.dmg to open it.
+
+    Drag QuantumCoBrain into your Applications folder.
+
+    Open it from your Applications or Launchpad.
 
 ## 🚀 The Core Philosophy: Systems Engineering vs. Physics
 Hardware physicists are working from the bottom up to fix quantum noise with better hardware. This project approaches the problem from the top down: **using intelligent software orchestration to make unstable hardware predictable.**
