@@ -1,6 +1,7 @@
 import os
 import json
 import sqlite3
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -24,6 +25,9 @@ oauth.register(
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+# 📂 MOUNT STATIC ASSETS ROUTING
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 # Direct native import from your Phase 3 backend!
 try:
