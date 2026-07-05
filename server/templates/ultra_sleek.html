@@ -95,7 +95,7 @@
         #help-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 4, 15, 0.9); backdrop-filter: blur(6px); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: #0c081f; border: 2px solid #d4af37; width: 550px; padding: 25px; box-shadow: 0 0 30px rgba(212,175,55,0.2); position: relative; border-radius: 8px; }
         .modal-header { color: #d4af37; font-size: 16px; font-weight: bold; margin-bottom: 15px; border-bottom: 1px dashed #d4af37; padding-bottom: 8px; }
-        .modal-body { font-size: 12px; color: #cbd2e1; line-height: 1.6; }
+        .modal-body { font-size: 12px; color: #cbd2e1; line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 8px; }
         .modal-body ul { margin-left: 15px; margin-top: 5px; margin-bottom: 10px; }
         .modal-close { position: absolute; bottom: 15px; right: 15px; border: 1px solid #ff5555; color: #ff5555; background: transparent; padding: 5px 10px; cursor: pointer; font-size: 10px; border-radius: 4px; }
         .modal-close:hover { background: rgba(255,85,85,0.15); }
@@ -192,18 +192,35 @@
     <!-- Operations Manual Modal Pop-up -->
     <div id="help-modal">
         <div class="modal-content">
-            <div class="modal-header">🛰️ CO-BRAIN OPERATOR MANUAL v1.0</div>
+            <div class="modal-header">🛰️ CO-BRAIN OPERATOR MANUAL v1.1</div>
             <div class="modal-body">
-                <p>Welcome to the active control surface. This interface models real-time environment noise simulation vectors against utility-scale quantum profiles.</p>
+                <p><strong>Purpose:</strong> This browser simulation is an interactive NISQ operations cockpit. You tune error sources, run a simulated experiment, and observe how mitigation changes leakage and fidelity in real time.</p>
                 <br>
-                <strong>🕹️ DASHBOARD CONTROLS & LOGIC:</strong>
+                <strong>🧭 HOW TO USE THE SIMULATION:</strong>
                 <ul>
-                    <li><strong>Noise Amp Slider:</strong> Increases environmental decoherence. Notice the red State Vector vector jiggle and trace erratic boundaries as variance increases.</li>
-                    <li><strong>Gate Drift Slider:</strong> Adjusts simulated gate degradation rates. Your active tuning calls are immediately processed by the FastAPI core loop.</li>
-                    <li><strong>Pauli-Twirling Toggle:</strong> Simulates structural error-twirling intercept routing configurations inside the runtime pipeline middleware.</li>
-                    <li><strong>Download Snapshot:</strong> Reaches back to your companion repository database layer to fetch verified historical JSON payloads from hardware execution runs.</li>
+                    <li><strong>Step 1:</strong> Set <strong>Noise Amp</strong> and <strong>Gate Drift</strong> with either sliders or numeric inputs.</li>
+                    <li><strong>Step 2:</strong> Choose mitigation mode with <strong>Pauli-Twirling</strong> (ACTIVE/BYPASS).</li>
+                    <li><strong>Step 3:</strong> Click <strong>⚡ RUN NISQ EXPERIMENT</strong> to compute hardware state, leakage, and fidelity.</li>
+                    <li><strong>Step 4:</strong> Compare outcomes across settings, then export with <strong>📁 Download Snapshot</strong>.</li>
                 </ul>
-                <p style="color: #ffb86c; margin-top: 10px;">💡 Note: MCP client routing listeners are actively attached to the /api/tune hook to handle automated tuning via CLI workflows.</p>
+                <strong>🔘 BUTTON & CONTROL DEFINITIONS:</strong>
+                <ul>
+                    <li><strong>🌌 Go Sleek / 📟 Retro Mode:</strong> Switches between visual themes; simulation logic and backend state remain the same.</li>
+                    <li><strong>❓ Operations Manual:</strong> Opens this operator guide popup.</li>
+                    <li><strong>[CLOSE MENU]:</strong> Closes the manual popup.</li>
+                    <li><strong>📁 Download Snapshot:</strong> Exports current state from <code>/api/state</code> as JSON for record-keeping/comparison.</li>
+                    <li><strong>Wipe Session:</strong> Clears authenticated operator session and signs out.</li>
+                    <li><strong>Noise Amp (slider/number):</strong> Controls decoherence intensity. Higher values increase stochastic disturbance.</li>
+                    <li><strong>Gate Drift (slider/number):</strong> Controls gate calibration error drift (%-style value), increasing coherent control error.</li>
+                    <li><strong>Pauli-Twirling (ACTIVE/BYPASS):</strong> Sends mitigation toggle to <code>/api/tune</code>; ACTIVE randomizes coherent error into more manageable stochastic channels.</li>
+                    <li><strong>⚡ RUN NISQ EXPERIMENT:</strong> Calls <code>/api/simulate</code> and updates Hardware State, Matrix Leakage Rate, Fidelity, and Insight.</li>
+                </ul>
+                <strong>⚛️ QUANTUM COMPUTING MECHANICS (WHY THIS UI MATTERS):</strong>
+                <p>Classical bits are 0 or 1. Quantum bits (qubits) use superposition, allowing a state to hold weighted probability amplitudes across 0 and 1 simultaneously. Multi-qubit entanglement introduces correlations unavailable to classical systems. Quantum gates rotate these amplitudes, and measurement collapses them to classical outcomes.</p>
+                <p>Real hardware is noisy: interactions with the environment and imperfect controls introduce decoherence, drift, crosstalk, and readout error. This simulator focuses on that practical layer by mapping your tuning inputs to leakage/fidelity behavior under mitigated vs unmitigated conditions.</p>
+                <strong>🧪 WHY NISQ IS THE MOST RELEVANT TOPIC TODAY:</strong>
+                <p>NISQ (Noisy Intermediate-Scale Quantum) devices are the quantum computers available now: useful for experimentation, benchmarking, hybrid workflows, and error-mitigation research, but not yet fully fault-tolerant. Because large-scale error-corrected machines are still emerging, the most valuable current work is understanding noise behavior, improving calibration, and developing mitigation strategies like Pauli twirling. This console is designed around that exact operational reality.</p>
+                <p style="color: #ffb86c; margin-top: 10px;">💡 Implementation note: frontend controls synchronize through <code>/api/tune</code>, state is persisted per operator, and experiment outputs are returned through <code>/api/simulate</code>.</p>
             </div>
             <button class="modal-close" onclick="toggleModal(false)">[CLOSE MENU]</button>
         </div>
