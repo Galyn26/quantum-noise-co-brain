@@ -190,6 +190,31 @@ async function updateKnobs() {
         }
 
         updateKnobs();
+
+        // Automatically pull live parameters from the backend every 1000ms
+async function syncFromBackend() {
+    try {
+        const response = await fetch('/api/state');
+        const state = await response.json();
+        
+        // Update inputs only if the user isn't actively dragging them
+        if (document.activeElement !== document.getElementById('noise-slider') &&
+            document.activeElement !== document.getElementById('drift-slider')) {
+            
+            document.getElementById('noise-slider').value = state.noise_amplitude;
+            document.getElementById('noise-num').value = state.noise_amplitude;
+            document.getElementById('drift-slider').value = state.gate_drift;
+            document.getElementById('drift-num').value = state.gate_drift;
+            
+            document.getElementById('vector-feed').innerText = `Noise Matrix: [${state.noise_amplitude}]\nSub-lattice Drift: [${state.gate_drift}%]\nTwirling Intercept: ${twirlingActive ? 'ENGAGED' : 'BYPASS'}`;
+        }
+    } catch (err) {
+        console.error("Telemetry sync error:", err);
+    }
+}
+
+// Spin up the heartbeat loop
+setInterval(syncFromBackend, 1000);
     </script>
 </body>
 </html>
