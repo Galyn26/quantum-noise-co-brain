@@ -126,6 +126,8 @@ async def download_dataset(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Firing up Live Protected Co-Brain Control Node...")
-    # Bound to 0.0.0.0 so external cloud interface routing can trace it successfully
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    # Read the dynamic port Render provides, or fallback to 8000 locally
+    port = int(os.environ.get("PORT", 8000))
+    print(f"🚀 Firing up Live Protected Co-Brain Control Node on port {port}...")
+    uvicorn.run(app, host="0.0.0.0", port=port)
