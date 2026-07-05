@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Cockpit Controls</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
+        body { background-color: #0a0a0c; color: #00ff66; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        #top-viewport { flex: 1; position: relative; border-bottom: 2px solid #00ff66; background: radial-gradient(circle, #111115 0%, #050507 100%); }
+        #bottom-controls { height: 40vh; background-color: #0f0f13; padding: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; box-shadow: inset 0 10px 20px rgba(0,0,0,0.8); }
+        
+        /* Utility Button Cluster */
+        .btn-group { position: absolute; top: 15px; right: 15px; display: flex; gap: 10px; z-index: 10; }
+        .utility-btn { background: transparent; border: 1px solid #00ff66; color: #00ff66; padding: 8px 14px; cursor: pointer; text-transform: uppercase; font-size: 11px; }
+        .utility-btn:hover { background-color: rgba(0, 255, 102, 0.2); }
+        #help-btn { border-color: #00e5ff; color: #00e5ff; }
+        #help-btn:hover { background-color: rgba(0, 229, 255, 0.2); }
+        
+        .control-panel { border: 1px solid rgba(0, 255, 102, 0.3); padding: 15px; background: rgba(20,20,30,0.6); display: flex; flex-direction: column; justify-content: space-between; }
+        .panel-title { font-size: 12px; color: #88c0d0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .knob-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;}
+        label { font-size: 14px; }
+        input[type="range"] { -webkit-appearance: none; width: 60%; background: #222; height: 6px; border: 1px solid #00ff66; border-radius: 3px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #00ff66; cursor: pointer; }
+        #telemetry-display { font-size: 13px; color: #a3be8c; line-height: 1.5; }
+
+        /* Terminal Help Modal Window Overlay */
+        #help-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 7, 0.85); backdrop-filter: blur(4px); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: #0f0f13; border: 2px solid #00e5ff; width: 550px; padding: 25px; box-shadow: 0 0 30px rgba(0,229,255,0.2); position: relative; }
+        .modal-header { color: #00e5ff; font-size: 16px; font-weight: bold; margin-bottom: 15px; border-bottom: 1px dashed #00e5ff; padding-bottom: 8px; }
+        .modal-body { font-size: 12px; color: #d8dee9; line-height: 1.6; }
+        .modal-body ul { margin-left: 15px; margin-top: 5px; margin-bottom: 10px; }
+        .modal-close { position: absolute; bottom: 15px; right: 15px; border: 1px solid #ff0055; color: #ff0055; background: transparent; padding: 5px 10px; cursor: pointer; font-size: 10px; }
+        .modal-close:hover { background: rgba(255,0,85,0.15); }
+    </style>
+</head>
+<body>
+
+    <!-- Top Half: 3D Visualization Space -->
+    <div id="top-viewport">
+        <div class="btn-group">
+            <button id="help-btn" class="utility-btn" onclick="toggleModal(true)">❓ Operations Manual</button>
+            <button class="utility-btn" onclick="downloadDataset()">📁 Download Snapshot</button>
+        </div>
+        <div style="position: absolute; top: 15px; left: 15px; font-size: 14px; font-weight: bold;">🛰️ LIVE HARDWARE REAL-TIME SIMULATOR</div>
+    </div>
+
+    <!-- Bottom Half: Controls Grid -->
+    <div id="bottom-controls">
+        <div class="control-panel">
+            <div class="panel-title">🎛️ Noise Mitigation Tuning</div>
+            <div class="knob-container">
+                <label>Noise Amp</label>
+                <input type="range" id="noise-slider" min="0.0" max="0.5" step="0.01" value="0.12" oninput="updateKnobs()">
+            </div>
+            <div class="knob-container">
+                <label>Gate Drift</label>
+                <input type="range" id="drift-slider" min="0.0" max="15.0" step="0.1" value="1.1" oninput="updateKnobs()">
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="panel-title">🛠️ Mitigator Middleware Routing</div>
+            <div class="knob-container">
+                <label>Pauli-Twirling</label>
+                <button id="twirl-toggle" class="utility-btn" style="position:static;" onclick="toggleTwirling()">ACTIVE</button>
+            </div>
+            <div id="telemetry-display">
+                Active Node: <span id="node-name" style="color:#fff;">ibm_fez</span><br>
+                Status: <span style="color:#00ff66;">ONLINE</span>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="panel-title">📊 Live Calibration Vector</div>
+            <div id="vector-feed" style="font-size: 12px; color: #ebcb8b; white-space: pre-wrap;">Initializing tracking loops...</div>
+        </div>
+    </div>
+
+    <!-- Operations Manual Modal Pop-up -->
+    <div id="help-modal">
+        <div class="modal-content">
+            <div class="modal-header">🛰️ CO-BRAIN OPERATOR MANUAL v1.0</div>
+            <div class="modal-body">
+                <p>Welcome to the active control surface. This interface models real-time environment noise simulation vectors against utility-scale quantum profiles.</p>
+                <br>
+                <strong>🕹️ DASHBOARD CONTROLS & LOGIC:</strong>
+                <ul>
+                    <li><strong>Noise Amp Slider:</strong> Increases environmental decoherence. Notice the red State Vector vector jiggle and trace erratic boundaries as variance increases.</li>
+                    <li><strong>Gate Drift Slider:</strong> Adjusts simulated gate degradation rates. Your active tuning calls are immediately processed by the FastAPI core loop.</li>
+                    <li><strong>Pauli-Twirling Toggle:</strong> Simulates structural error-twirling intercept routing configurations inside the runtime pipeline middleware.</li>
+                    <li><strong>Download Snapshot:</strong> Reaches back to your companion repository database layer to fetch verified historical JSON payloads from hardware execution runs.</li>
+                </ul>
+                <p style="color: #ebcb8b;">💡 Note: MCP client routing listeners are actively attached to the /api/tune hook to handle automated tuning via CLI workflows.</p>
+            </div>
+            <button class="modal-close" onclick="toggleModal(false)">[CLOSE MENU]</button>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('top-viewport');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+
+        const sphereGeo = new THREE.SphereGeometry(2, 24, 24);
+        const sphereMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, wireframe: true, transparent: true, opacity: 0.15 });
+        const blochSphere = new THREE.Mesh(sphereGeo, sphereMat);
+        scene.add(blochSphere);
+
+        const axesHelper = new THREE.AxesHelper(3);
+        scene.add(axesHelper);
+
+        const vectorGeo = new THREE.CylinderGeometry(0.03, 0.03, 2, 8);
+        vectorGeo.translate(0, 1, 0);
+        const vectorMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+        const stateVector = new THREE.Mesh(vectorGeo, vectorMat);
+        scene.add(stateVector);
+
+        camera.position.set(4, 3, 5);
+        camera.lookAt(0, 0, 0);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            blochSphere.rotation.y += 0.002;
+            
+            const noise = parseFloat(document.getElementById('noise-slider').value);
+            stateVector.rotation.z = Math.sin(Date.now() * 0.005) * noise;
+            stateVector.rotation.x = Math.cos(Date.now() * 0.003) * noise;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        let twirlingActive = true;
+
+        async function updateKnobs() {
+            const noise = document.getElementById('noise-slider').value;
+            const drift = document.getElementById('drift-slider').value;
+            
+            document.getElementById('vector-feed').innerText = `Noise Matrix: [${noise}]\nSub-lattice Drift: [${drift}%]\nTwirling Intercept: ${twirlingActive ? 'ENGAGED' : 'BYPASS'}`;
+
+            await fetch('/api/tune', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ noise_amplitude: parseFloat(noise), gate_drift: parseFloat(drift) })
+            });
+        }
+
+        function toggleTwirling() {
+            twirlingActive = !twirlingActive;
+            const btn = document.getElementById('twirl-toggle');
+            btn.innerText = twirlingActive ? 'ACTIVE' : 'BYPASS';
+            btn.style.borderColor = twirlingActive ? '#00ff66' : '#ff0055';
+            btn.style.color = twirlingActive ? '#00ff66' : '#ff0055';
+            updateKnobs();
+        }
+
+        function downloadDataset() {
+            window.open('/api/download-dataset', '_blank');
+        }
+
+        function toggleModal(show) {
+            document.getElementById('help-modal').style.display = show ? 'flex' : 'none';
+        }
+
+        updateKnobs();
+    </script>
+</body>
+</html>
