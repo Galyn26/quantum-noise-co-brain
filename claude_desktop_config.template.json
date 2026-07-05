@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "quantum-co-brain": {
+      "command": "ssh",
+      "args": [
+        "-T",
+        "galyn@<YOUR_LINUX_TAILSCALE_IP>",
+        "cd /home/galyn/projects/quantum-noise-co-brain && python3 -u server/mcp_server.py"
+      ]
+    }
+  }
+}

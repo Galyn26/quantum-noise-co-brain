@@ -176,3 +176,24 @@ Spin up the interactive local micro-web-server to visualize the physical quantum
 ```bash
 python3 server/app.py
 ```
+### 6. Phase 5: Remote Model Context Protocol (MCP) Integration
+The workspace includes a native JSON-RPC 2.0 compliant MCP server over `stdio`, allowing an external AI client workspace (like Cursor or Claude Desktop) on a remote management node (e.g., your macOS Cockpit) to discover and execute live hardware-tuning features.
+
+#### Cross-Node Stdio Orchestration Layout:
+1. Copy the included local template structure:
+   ```bash
+   cp claude_desktop_config.template.json ~/.config/Claude/claude_desktop_config.json
+
+* Open your client's MCP tool suite or configuration profile and map the secure SSH stream pipe arguments:
+
+```
+"quantum-co-brain": {
+  "command": "ssh",
+  "args": [
+    "-T",
+    "user@your-tailscale-mesh-ip",
+    "cd /path/to/quantum-noise-co-brain && python3 -u server/mcp_server.py"
+  ]
+}
+```
+* Core Verification: Disabling pseudo-terminal allocation (-T) and forcing Python's unbuffered stream flag (-u) ensures raw, instant, binary-safe data transport over encrypted mesh nodes. Ask your companion AI agent to use the @quantum-co-brain handle to invoke dial_quantum_knobs and watch the 3D dashboard components lock target vectors completely through software automation.
