@@ -157,7 +157,7 @@ async def logout(request: Request):
 
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard(request: Request):
-    """Protected Dashboard Surface."""
+    """Protected Dashboard Surface (Classic Cyber-Green Base Layer)."""
     user_id = request.session.get("user_id")
     if not user_id:
         return RedirectResponse(url="/login")
@@ -168,6 +168,19 @@ async def get_dashboard(request: Request):
         {"request": request, "state": current_state, "username": request.session.get("user_name")}
     )
 
+
+@app.get("/sleek", response_class=HTMLResponse)
+async def get_sleek_dashboard(request: Request):
+    """Protected Dashboard Surface (Ultra Sleek Gold & Purple Layer)."""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return RedirectResponse(url="/login")
+        
+    current_state = get_or_create_user_state(user_id)
+    return templates.TemplateResponse(
+        request, "ultra_sleek.html", 
+        {"request": request, "state": current_state, "username": request.session.get("user_name")}
+    )
 
 @app.get("/api/state")
 async def get_state(request: Request):

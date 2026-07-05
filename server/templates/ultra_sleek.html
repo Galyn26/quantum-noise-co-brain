@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Cockpit Controls - Ultra Sleek</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
+        
+        /* 🔮 Cosmic Purple Background Matrix */
+        body { 
+            background: radial-gradient(circle at center, #130c2e 0%, #05030f 100%); 
+            color: #ebdcb8; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        
+        /* 🧊 Viewport Chamber with implicit internal gas glow */
+        #top-viewport { 
+            flex: 12; 
+            position: relative; 
+            border-bottom: 2px solid rgba(212, 175, 55, 0.3); 
+            background: radial-gradient(circle, #100a26 0%, #06040f 100%);
+            box-shadow: inset 0 0 50px rgba(138, 43, 226, 0.2);
+        }
+        
+        /* 🕶️ Real-time Glass Terminal Overlay Reflector */
+        #top-viewport::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 45%, rgba(138,43,226,0.02) 60%, rgba(255,255,255,0.04) 100%);
+            pointer-events: none; /* Mouse operations fall through cleanly to Three.js canvas layer */
+            z-index: 5;
+        }
+        
+        /* Expanded Console Dashboard Controller Desk */
+        #bottom-controls { 
+            height: 48vh; 
+            background-color: #080612; 
+            padding: 20px; 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 20px; 
+            box-shadow: inset 0 15px 30px rgba(0,0,0,0.9); 
+            border-top: 1px solid rgba(138, 43, 226, 0.2);
+        }
+        
+        .btn-group { position: absolute; top: 15px; right: 15px; display: flex; gap: 10px; z-index: 10; }
+        
+        /* 🏆 Polished Gold Trimming for Buttons */
+        .utility-btn { 
+            background: rgba(25, 18, 52, 0.5); 
+            border: 1px solid rgba(212, 175, 55, 0.5); 
+            color: #d4af37; 
+            padding: 8px 14px; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            font-size: 11px; 
+            border-radius: 4px;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+        }
+        .utility-btn:hover { background-color: rgba(212, 175, 55, 0.2); box-shadow: 0 0 10px rgba(212, 175, 55, 0.2); }
+        #help-btn { border-color: #9b6eff; color: #b794ff; }
+        #help-btn:hover { background-color: rgba(155, 110, 255, 0.2); box-shadow: 0 0 10px rgba(155, 110, 255, 0.2); }
+        
+        /* Glassmorphic Panel Units */
+        .control-panel { 
+            border: 1px solid rgba(212, 175, 55, 0.18); 
+            border-radius: 8px;
+            padding: 15px; 
+            background: rgba(20, 14, 43, 0.45); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+        .panel-title { font-size: 12px; color: #d4af37; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-shadow: 0 0 6px rgba(212,175,55,0.2); }
+        .knob-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;}
+        label { font-size: 13px; color: #bcaed4; }
+        
+        /* Gold Ranger Input Dials */
+        input[type="range"] { -webkit-appearance: none; width: 60%; background: #1a1436; height: 6px; border: 1px solid rgba(212,175,55,0.2); border-radius: 3px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #d4af37; border-radius: 50%; cursor: pointer; box-shadow: 0 0 8px #ffb86c; }
+        #telemetry-display { font-size: 13px; color: #bd93f9; line-height: 1.5; }
+
+        #help-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 4, 15, 0.9); backdrop-filter: blur(6px); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: #0c081f; border: 2px solid #d4af37; width: 550px; padding: 25px; box-shadow: 0 0 30px rgba(212,175,55,0.2); position: relative; border-radius: 8px; }
+        .modal-header { color: #d4af37; font-size: 16px; font-weight: bold; margin-bottom: 15px; border-bottom: 1px dashed #d4af37; padding-bottom: 8px; }
+        .modal-body { font-size: 12px; color: #cbd2e1; line-height: 1.6; }
+        .modal-body ul { margin-left: 15px; margin-top: 5px; margin-bottom: 10px; }
+        .modal-close { position: absolute; bottom: 15px; right: 15px; border: 1px solid #ff5555; color: #ff5555; background: transparent; padding: 5px 10px; cursor: pointer; font-size: 10px; border-radius: 4px; }
+        .modal-close:hover { background: rgba(255,85,85,0.15); }
+
+        .user-profile-widget { position: absolute; top: 15px; left: 450px; font-size: 12px; z-index: 10; display: flex; align-items: center; color: #bcaed4; }
+        .logout-btn:hover { background-color: rgba(255, 85, 85, 0.2); }   
+
+        /* Embedded Telemetry Panel Adjustments */
+        #run-sim-btn {
+            background: linear-gradient(135deg, #d4af37 0%, #aa8413 100%);
+            color: #05030f;
+            font-weight: bold;
+            border: none;
+            border-radius: 4px;
+            width: 100%;
+            padding: 8px;
+            cursor: pointer;
+            font-family: monospace;
+            box-shadow: 0 4px 12px rgba(212,175,55,0.3);
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+        #run-sim-btn:hover { box-shadow: 0 4px 18px rgba(212,175,55,0.5); }
+    </style>
+</head>
+<body>
+
+    <!-- Top Half: 3D Visualization Space behind Glass -->
+    <div id="top-viewport">
+        <div class="btn-group">
+            <button id="help-btn" class="utility-btn" onclick="toggleModal(true)">❓ Operations Manual</button>
+            <button class="utility-btn" onclick="downloadDataset()">📁 Download Snapshot</button>
+        </div>
+        <div style="position: absolute; top: 15px; left: 15px; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 15px; z-index: 10; color: #d4af37;">
+            <span>🛰️ QUANTUM CO-BRAIN OPERATOR DESK</span>
+            <a href="/" style="background: transparent; border: 1px solid #00ff66; color: #00ff66; padding: 4px 8px; cursor: pointer; text-transform: uppercase; font-size: 10px; font-weight: bold; text-decoration: none; border-radius: 3px;">📟 RETRO MODE</a>
+        </div>
+        
+        <div class="user-profile-widget">
+            <span>Operator: <strong style="color: #fff;">{{ username }}</strong></span>
+            <a href="/logout" class="logout-btn" style="margin-left: 15px; color: #ff5555; text-decoration: none; border: 1px solid #ff5555; padding: 3px 6px; border-radius: 4px; font-size: 11px;">Wipe Session</a>
+        </div>
+    </div>
+
+    <!-- Bottom Half: Integrated Dashboard Console Controls Grid -->
+    <div id="bottom-controls">
+        
+        <!-- Panel 1: Tuning Knobs -->
+        <div class="control-panel">
+            <div class="panel-title">🎛️ Noise Mitigation Tuning</div>
+            <div class="knob-container">
+                <label style="width: 30%;">Noise Amp</label>
+                <input type="range" id="noise-slider" min="0.0" max="0.5" step="0.01" value="0.12" oninput="syncInputs('noise', this.value)">
+                <input type="number" id="noise-num" min="0.0" max="0.5" step="0.01" value="0.12" style="width: 60px; background: #1a1436; border: 1px solid rgba(212,175,55,0.4); color: #d4af37; padding: 2px; font-family: monospace; text-align: center; border-radius: 4px;" oninput="syncInputs('noise', this.value)">
+            </div>
+            <div class="knob-container">
+                <label style="width: 30%;">Gate Drift</label>
+                <input type="range" id="drift-slider" min="0.0" max="15.0" step="0.1" value="1.1" oninput="syncInputs('drift', this.value)">
+                <input type="number" id="drift-num" min="0.0" max="15.0" step="0.1" value="1.1" style="width: 60px; background: #1a1436; border: 1px solid rgba(212,175,55,0.4); color: #d4af37; padding: 2px; font-family: monospace; text-align: center; border-radius: 4px;" oninput="syncInputs('drift', this.value)">
+            </div>
+        </div>
+
+        <!-- Panel 2: Routing Control and Telemetry metadata -->
+        <div class="control-panel">
+            <div class="panel-title">🛠️ Mitigator Middleware Routing</div>
+            <div class="knob-container">
+                <label>Pauli-Twirling</label>
+                <button id="twirl-toggle" class="utility-btn" style="position:static;" onclick="toggleTwirling()">ACTIVE</button>
+            </div>
+            <div id="telemetry-display">
+                Active Node: <span id="node-name" style="color:#fff;">ibm_fez</span><br>
+                Status: <span style="color:#d4af37; font-weight: bold;">ONLINE</span>
+                <div id="vector-feed" style="font-size: 11px; color: #bcaed4; margin-top: 8px; white-space: pre-wrap; border-top: 1px dashed rgba(212,175,55,0.15); padding-top: 4px;">Initializing tracking loops...</div>
+            </div>
+        </div>
+
+        <!-- Panel 3: Relocated and integrated Telemetry Interpreter Panel -->
+        <div class="control-panel" style="justify-content: flex-start; gap: 8px; overflow-y: auto;">
+            <div class="panel-title">📊 Telemetry Interpreter</div>
+            <button id="run-sim-btn">⚡ Run NISQ Experiment</button>
+            
+            <div id="simulation-results" style="margin-top: 5px; display: none; font-size: 11px; width: 100%;">
+                <p style="margin-bottom: 2px;"><strong>Hardware State:</strong> <span id="out-hardware" style="color: #ff5555; font-weight: bold;">CRITICAL</span></p>
+                <p style="margin-bottom: 2px;"><strong>Matrix Leakage Rate:</strong> <span id="out-leakage" style="color:#fff;">0.0%</span></p>
+                <p style="margin-bottom: 4px;"><strong>Fidelity Loss:</strong> <span id="out-fidelity" style="color:#fff;">0.0%</span></p>
+                
+                <div style="background: rgba(138,43,226,0.1); border-left: 2px solid #d4af37; padding: 6px; margin: 2px 0; font-size: 11px; border-radius: 0 4px 4px 0;">
+                    <p><strong style="color:#d4af37;">Insight:</strong> <span id="out-insight" style="color: #cbd2e1;">Configure parameters and run diagnostic loop...</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Operations Manual Modal Pop-up -->
+    <div id="help-modal">
+        <div class="modal-content">
+            <div class="modal-header">🛰️ CO-BRAIN OPERATOR MANUAL v1.0</div>
+            <div class="modal-body">
+                <p>Welcome to the active control surface. This interface models real-time environment noise simulation vectors against utility-scale quantum profiles.</p>
+                <br>
+                <strong>🕹️ DASHBOARD CONTROLS & LOGIC:</strong>
+                <ul>
+                    <li><strong>Noise Amp Slider:</strong> Increases environmental decoherence. Notice the red State Vector vector jiggle and trace erratic boundaries as variance increases.</li>
+                    <li><strong>Gate Drift Slider:</strong> Adjusts simulated gate degradation rates. Your active tuning calls are immediately processed by the FastAPI core loop.</li>
+                    <li><strong>Pauli-Twirling Toggle:</strong> Simulates structural error-twirling intercept routing configurations inside the runtime pipeline middleware.</li>
+                    <li><strong>Download Snapshot:</strong> Reaches back to your companion repository database layer to fetch verified historical JSON payloads from hardware execution runs.</li>
+                </ul>
+                <p style="color: #ffb86c; margin-top: 10px;">💡 Note: MCP client routing listeners are actively attached to the /api/tune hook to handle automated tuning via CLI workflows.</p>
+            </div>
+            <button class="modal-close" onclick="toggleModal(false)">[CLOSE MENU]</button>
+        </div>
+    </div>
+
+    <!-- Execution Logic Script Engine -->
+    <script>
+        const container = document.getElementById('top-viewport');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+
+        const sphereGeo = new THREE.SphereGeometry(2, 24, 24);
+        // Soft violet matrix sphere styling to match dashboard tones
+        const sphereMat = new THREE.MeshBasicMaterial({ color: 0x8a2be2, wireframe: true, transparent: true, opacity: 0.18 });
+        const blochSphere = new THREE.Mesh(sphereGeo, sphereMat);
+        scene.add(blochSphere);
+
+        const axesHelper = new THREE.AxesHelper(3);
+        scene.add(axesHelper);
+
+        const vectorGeo = new THREE.CylinderGeometry(0.03, 0.03, 2, 8);
+        vectorGeo.translate(0, 1, 0);
+        const vectorMat = new THREE.MeshBasicMaterial({ color: 0xd4af37 }); // Gold vector arrow
+        const stateVector = new THREE.Mesh(vectorGeo, vectorMat);
+        scene.add(stateVector);
+
+        camera.position.set(4, 3, 5);
+        camera.lookAt(0, 0, 0);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            blochSphere.rotation.y += 0.002;
+            
+            const noise = parseFloat(document.getElementById('noise-slider').value);
+            stateVector.rotation.z = Math.sin(Date.now() * 0.005) * noise;
+            stateVector.rotation.x = Math.cos(Date.now() * 0.003) * noise;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        let twirlingActive = true;
+        let tuneTimeout;
+
+        function updateVectorFeed() {
+            const noise = document.getElementById('noise-slider').value;
+            const drift = document.getElementById('drift-slider').value;
+            document.getElementById('vector-feed').innerText =
+                `Noise Matrix: [${noise}]\nSub-lattice Drift: [${drift}%]\nTwirling Intercept: ${twirlingActive ? 'ENGAGED' : 'BYPASS'}`;
+        }
+
+        function updateTwirlButton() {
+            const twirlToggle = document.getElementById('twirl-toggle');
+            twirlToggle.textContent = twirlingActive ? 'ACTIVE' : 'BYPASS';
+            twirlToggle.style.borderColor = twirlingActive ? '#d4af37' : '#ff5555';
+            twirlToggle.style.color = twirlingActive ? '#d4af37' : '#ff5555';
+        }
+
+        async function pushState(patch) {
+            const response = await fetch('/api/tune', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(patch)
+            });
+
+            if (!response.ok) {
+                throw new Error(`State update failed with status ${response.status}`);
+            }
+        }
+
+        function syncInputs(type, val) {
+            if (type === 'noise') {
+                document.getElementById('noise-slider').value = val;
+                document.getElementById('noise-num').value = val;
+            } else if (type === 'drift') {
+                document.getElementById('drift-slider').value = val;
+                document.getElementById('drift-num').value = val;
+            }
+
+            updateVectorFeed();
+
+            clearTimeout(tuneTimeout);
+            tuneTimeout = setTimeout(updateKnobs, 150);
+        }
+
+        async function updateKnobs() {
+            const noise = parseFloat(document.getElementById('noise-slider').value);
+            const drift = parseFloat(document.getElementById('drift-slider').value);
+
+            try {
+                await pushState({ noise_amplitude: noise, gate_drift: drift });
+            } catch (err) {
+                console.error('Failed to push tuning matrix parameters:', err);
+            }
+        }
+
+        async function toggleTwirling() {
+            const nextValue = !twirlingActive;
+            try {
+                await pushState({ pauli_twirling: nextValue });
+                twirlingActive = nextValue;
+                updateTwirlButton();
+                updateVectorFeed();
+            } catch (err) {
+                console.error('Failed to toggle pauli twirling:', err);
+            }
+        }
+
+        async function syncFromBackend() {
+            try {
+                const response = await fetch('/api/state');
+                if (!response.ok) {
+                    throw new Error(`State fetch failed with status ${response.status}`);
+                }
+
+                const state = await response.json();
+                document.getElementById('noise-slider').value = state.noise_amplitude;
+                document.getElementById('noise-num').value = state.noise_amplitude;
+                document.getElementById('drift-slider').value = state.gate_drift;
+                document.getElementById('drift-num').value = state.gate_drift;
+                twirlingActive = Boolean(state.pauli_twirling);
+                updateTwirlButton();
+                updateVectorFeed();
+            } catch (err) {
+                console.error('Failed to sync state from backend:', err);
+            }
+        }
+
+        async function downloadDataset() {
+            try {
+                const response = await fetch('/api/state');
+                if (!response.ok) {
+                    throw new Error(`Snapshot fetch failed with status ${response.status}`);
+                }
+
+                const state = await response.json();
+                const snapshot = {
+                    captured_at: new Date().toISOString(),
+                    state
+                };
+
+                const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const anchor = document.createElement('a');
+                anchor.href = url;
+                anchor.download = `quantum_snapshot_${Date.now()}.json`;
+                document.body.appendChild(anchor);
+                anchor.click();
+                anchor.remove();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('Failed to download snapshot JSON:', err);
+            }
+        }
+
+        function toggleModal(show) {
+            document.getElementById('help-modal').style.display = show ? 'flex' : 'none';
+        }
+
+        syncFromBackend();
+        setInterval(syncFromBackend, 1000);
+
+        document.getElementById('run-sim-btn').addEventListener('click', async () => {
+            const outputArea = document.getElementById('simulation-results');
+            const runBtn = document.getElementById('run-sim-btn');
+            
+            runBtn.innerText = "⏳ COMPILING MATRIX...";
+            
+            try {
+                const response = await fetch('/api/simulate', { method: 'POST' });
+                const results = await response.json();
+                
+                document.getElementById('out-hardware').innerText = results.status;
+                document.getElementById('out-leakage').innerText = results.leakage;
+                document.getElementById('out-fidelity').innerText = results.fidelity;
+                document.getElementById('out-insight').innerText = results.insight;
+                
+                const statusColor = results.status === "STABLE" ? "#00ff66" : results.status === "DEGRADED" ? "#ffaa00" : "#ff5555";
+                document.getElementById('out-hardware').style.color = statusColor;
+                
+                outputArea.style.display = "block";
+            } catch (err) {
+                console.error("Simulation run failed:", err);
+            } finally {
+                runBtn.innerText = "⚡ RUN NISQ EXPERIMENT";
+            }
+        });
+    </script>
+</body>
+</html>
