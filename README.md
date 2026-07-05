@@ -197,3 +197,24 @@ The workspace includes a native JSON-RPC 2.0 compliant MCP server over `stdio`, 
 }
 ```
 * Core Verification: Disabling pseudo-terminal allocation (-T) and forcing Python's unbuffered stream flag (-u) ensures raw, instant, binary-safe data transport over encrypted mesh nodes. Ask your companion AI agent to use the @quantum-co-brain handle to invoke dial_quantum_knobs and watch the 3D dashboard components lock target vectors completely through software automation.
+
+---
+
+## 🌐 Phase 6: Production Cloud Deployment & Web Dashboard
+
+To move past local terminal tracking, the interactive visualization layer has been pulled out of the local micro-web-server and fully scaled into a production-live cloud workspace. 
+
+🎯 **Live Web Application URL:** [https://quantum-noise-co-brain.onrender.com](https://quantum-noise-co-brain.onrender.com)
+
+### 🔒 Multi-Tenant Federated Authentication
+The web infrastructure has been upgraded from a static sandbox to an **Identity-Isolated State Plane**. 
+* **The Layer:** Handshakes natively with an **Auth0 Federated Gateway** via an OAuth2 Authorization Code Flow using `Authlib` and secure `Starlette` cryptographic session cookie signing.
+* **The Flow:** Anyone can securely sign up or authenticate via Google OAuth or Email. Upon validation, Auth0 hands back a unique user identifier (`sub` claim), which the backend uses as a primary key.
+
+### 🗄️ Relational Database Persistence
+Instead of a shared memory layer where one user's slider changes override another's, the server runs a self-initializing **SQLite Relational Engine**.
+* Every operator account gets an isolated row mapping their exact tuning parameters (`noise_amplitude`, `gate_drift`, `pauli_twirling` states).
+* **State Persistence:** When you adjust the sliders or toggles in the 3D WebGL Bloch Sphere interface, the parameters are instantly committed to the database rows via asynchronous `POST` requests. Refreshing the browser or logging in from a different machine instantly recalls your specific operator layout.
+
+### 📥 Telemetry Snapshot Exporting
+Operators can extract their active database configurations using the **Download Snapshot** asset tool. Clicking the button hits the app's internal `/api/state` endpoint, aggregates the active tuning row parameters, parses them into a raw JSON blob, and dynamically generates a local file package download (`quantum_co_brain_snapshot_[DATE].json`) directly inside the browser container.
