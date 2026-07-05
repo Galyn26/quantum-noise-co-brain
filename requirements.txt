@@ -5,3 +5,9 @@ python-multipart
 authlib
 httpx
 itsdangerous
+pywebview
+python-dotenv
+pysqlite3-binary
+PyQt5
+qtpy
+PyQtWebEngine

@@ -12,3 +12,10 @@ server/__pycache__/
 build/
 dist/
 *.spec
+.venv/
+env/
+build/
+dist/
+*.spec
+__pycache__/
+.env
