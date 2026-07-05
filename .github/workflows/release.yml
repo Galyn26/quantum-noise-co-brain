@@ -37,7 +37,7 @@ jobs:
         python-version: '3.10'
         cache: 'pip'
 
-    - name: [Linux] Install System Graphical & SQLite Headers
+    - name: Install System Graphical and SQLite Headers
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
@@ -49,8 +49,7 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
 
-    # --- NATIVE COMPILATION STEPS (SPLIT TO PREVENT SYNTAX ERRORS) ---
-    - name: [Linux/Mac] Compile Native Binary
+    - name: Compile Native Binary for Linux and Mac
       if: matrix.os != 'windows-latest'
       run: |
         python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" \
@@ -61,7 +60,7 @@ jobs:
           --add-data "server:server" \
           server/desktop.py
 
-    - name: [Windows] Compile Native Exe
+    - name: Compile Native Exe for Windows
       if: matrix.os == 'windows-latest'
       run: |
         python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" \
@@ -72,22 +71,22 @@ jobs:
           --add-data "server;server" \
           server/desktop.py
 
-    # --- COMPRESSION & PACKAGING STEP ---
-    - name: [Linux] Package Tarball
+    - name: Package Tarball for Linux
       if: matrix.os == 'ubuntu-latest'
-      run: tar -czf QuantumCoBrain-Linux-x64.tar.gz -C dist QuantumCoBrain/
+      run: |
+        tar -czf QuantumCoBrain-Linux-x64.tar.gz -C dist QuantumCoBrain/
 
-    - name: [Windows] Package Zip Archive
+    - name: Package Zip Archive for Windows
       if: matrix.os == 'windows-latest'
-      run: PowerShell-Command "Compress-Archive -Path dist\QuantumCoBrain\* -DestinationPath QuantumCoBrain-Windows-x64.zip"
+      run: |
+        powershell Compress-Archive -Path dist\QuantumCoBrain\* -DestinationPath QuantumCoBrain-Windows-x64.zip
 
-    - name: [macOS] Package DMG Installer
+    - name: Package DMG Installer for macOS
       if: matrix.os == 'macos-latest'
       run: |
         pip install dmgbuild
         zip -r QuantumCoBrain-MacOS.dmg dist/QuantumCoBrain/
 
-    # --- AUTOMATIC RELEASE LAYER ---
     - name: Upload Native OS Asset to GitHub Release
       uses: softprops/action-gh-release@v2
       with:
