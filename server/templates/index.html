@@ -163,46 +163,125 @@
         });
 
         let twirlingActive = true;
+        let tuneTimeout;
 
-let tuneTimeout;
+        function updateVectorFeed() {
+            const noise = document.getElementById('noise-slider').value;
+            const drift = document.getElementById('drift-slider').value;
+            document.getElementById('vector-feed').innerText =
+                `Noise Matrix: [${noise}]\nSub-lattice Drift: [${drift}%]\nTwirling Intercept: ${twirlingActive ? 'ENGAGED' : 'BYPASS'}`;
+        }
 
-function syncInputs(type, val) {
-    // Keep both the visual slider and numerical box locked together instantly
-    if (type === 'noise') {
-        document.getElementById('noise-slider').value = val;
-        document.getElementById('noise-num').value = val;
-    } else if (type === 'drift') {
-        document.getElementById('drift-slider').value = val;
-        document.getElementById('drift-num').value = val;
-    }
-    
-    // Instantly update the local HUD display text for responsive feedback
-    const noise = document.getElementById('noise-slider').value;
-    const drift = document.getElementById('drift-slider').value;
-    document.getElementById('vector-feed').innerText = `Noise Matrix: [${noise}]\nSub-lattice Drift: [${drift}%]\nTwirling Intercept: ${twirlingActive ? 'ENGAGED' : 'BYPASS'}`;
+        function updateTwirlButton() {
+            const twirlToggle = document.getElementById('twirl-toggle');
+            twirlToggle.textContent = twirlingActive ? 'ACTIVE' : 'BYPASS';
+            twirlToggle.style.borderColor = twirlingActive ? '#00ff66' : '#ff5555';
+            twirlToggle.style.color = twirlingActive ? '#00ff66' : '#ff5555';
+        }
 
-    // Debounce the network request so it doesn't spam the FastAPI backend while dragging
-    clearTimeout(tuneTimeout);
-    tuneTimeout = setTimeout(updateKnobs, 150); 
-}
+        async function pushState(patch) {
+            const response = await fetch('/api/tune', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(patch)
+            });
 
-async function updateKnobs() {
-    const noise = document.getElementById('noise-slider').value;
-    const drift = document.getElementById('drift-slider').value;
-    
-    try {
-        await fetch('/api/tune', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ noise_amplitude: parseFloat(noise), gate_drift: parseFloat(drift) })
-        });
-    } catch (err) {
-        console.error("Failed to push tuning matrix parameters:", err);
-    }
-}
+            if (!response.ok) {
+                throw new Error(`State update failed with status ${response.status}`);
+            }
+        }
 
-// Spin up the heartbeat loop
-setInterval(syncFromBackend, 1000);
+        function syncInputs(type, val) {
+            if (type === 'noise') {
+                document.getElementById('noise-slider').value = val;
+                document.getElementById('noise-num').value = val;
+            } else if (type === 'drift') {
+                document.getElementById('drift-slider').value = val;
+                document.getElementById('drift-num').value = val;
+            }
+
+            updateVectorFeed();
+
+            clearTimeout(tuneTimeout);
+            tuneTimeout = setTimeout(updateKnobs, 150);
+        }
+
+        async function updateKnobs() {
+            const noise = parseFloat(document.getElementById('noise-slider').value);
+            const drift = parseFloat(document.getElementById('drift-slider').value);
+
+            try {
+                await pushState({ noise_amplitude: noise, gate_drift: drift });
+            } catch (err) {
+                console.error('Failed to push tuning matrix parameters:', err);
+            }
+        }
+
+        async function toggleTwirling() {
+            const nextValue = !twirlingActive;
+            try {
+                await pushState({ pauli_twirling: nextValue });
+                twirlingActive = nextValue;
+                updateTwirlButton();
+                updateVectorFeed();
+            } catch (err) {
+                console.error('Failed to toggle pauli twirling:', err);
+            }
+        }
+
+        async function syncFromBackend() {
+            try {
+                const response = await fetch('/api/state');
+                if (!response.ok) {
+                    throw new Error(`State fetch failed with status ${response.status}`);
+                }
+
+                const state = await response.json();
+                document.getElementById('noise-slider').value = state.noise_amplitude;
+                document.getElementById('noise-num').value = state.noise_amplitude;
+                document.getElementById('drift-slider').value = state.gate_drift;
+                document.getElementById('drift-num').value = state.gate_drift;
+                twirlingActive = Boolean(state.pauli_twirling);
+                updateTwirlButton();
+                updateVectorFeed();
+            } catch (err) {
+                console.error('Failed to sync state from backend:', err);
+            }
+        }
+
+        async function downloadDataset() {
+            try {
+                const response = await fetch('/api/state');
+                if (!response.ok) {
+                    throw new Error(`Snapshot fetch failed with status ${response.status}`);
+                }
+
+                const state = await response.json();
+                const snapshot = {
+                    captured_at: new Date().toISOString(),
+                    state
+                };
+
+                const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const anchor = document.createElement('a');
+                anchor.href = url;
+                anchor.download = `quantum_snapshot_${Date.now()}.json`;
+                document.body.appendChild(anchor);
+                anchor.click();
+                anchor.remove();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('Failed to download snapshot JSON:', err);
+            }
+        }
+
+        function toggleModal(show) {
+            document.getElementById('help-modal').style.display = show ? 'flex' : 'none';
+        }
+
+        syncFromBackend();
+        setInterval(syncFromBackend, 1000);
     </script>
 </body>
 </html>
