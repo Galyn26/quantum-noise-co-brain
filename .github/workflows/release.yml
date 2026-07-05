@@ -37,54 +37,48 @@ jobs:
         python-version: '3.10'
         cache: 'pip'
 
-    - name: [Linux] Install System Graphical and SQLite Headers
+    - name: Install Linux System Headers
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
         sudo apt-get install -y libsqlite3-dev libgirepository1.0-dev libcairo2-dev pkg-config
 
-    - name: [Linux] Install Python Dependencies Matrix
+    - name: Install Linux Python Matrix
       if: matrix.os == 'ubuntu-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
         pip install -r requirements.txt
         pip install pyinstaller
 
-    - name: [Mac/Windows] Install Dependencies Without Linux Binary Patch
+    - name: Install Cross Platform Matrix
       if: matrix.os != 'ubuntu-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        # Remove the linux-specific binary requirement dynamically for Mac/Windows targets
         grep -v "pysqlite3-binary" requirements.txt > requirements_cross.txt
         pip install -r requirements_cross.txt
         pip install pyinstaller
 
-    - name: [Linux/Mac] Compile Native Binary
+    - name: Compile Linux and Mac Binaries
       if: matrix.os != 'windows-latest'
       run: |
-        python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" \
-          --collect-all "pysqlite3" \
-          --collect-all "qtpy" \
-          --collect-all "PyQt5" \
-          --collect-all "PyQtWebEngine" \
-          --add-data "server:server" \
-          server/desktop.py
+        python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" --collect-all "pysqlite3" --collect-all "qtpy" --collect-all "PyQt5" --collect-all "PyQtWebEngine" --add-data "server:server" server/desktop.py
 
-    - name: [Windows] Compile Native Exe (Single Line for PowerShell)
+    - name: Compile Windows Exe
       if: matrix.os == 'windows-latest'
-      run: python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" --collect-all "pysqlite3" --collect-all "qtpy" --collect-all "PyQt5" --collect-all "PyQtWebEngine" --add-data "server;server" server/desktop.py
+      run: |
+        python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" --collect-all "pysqlite3" --collect-all "qtpy" --collect-all "PyQt5" --collect-all "PyQtWebEngine" --add-data "server;server" server/desktop.py
 
-    - name: [Linux] Package Tarball
+    - name: Package Linux Assets
       if: matrix.os == 'ubuntu-latest'
       run: |
         tar -czf QuantumCoBrain-Linux-x64.tar.gz -C dist QuantumCoBrain/
 
-    - name: [Windows] Package Zip Archive
+    - name: Package Windows Assets
       if: matrix.os == 'windows-latest'
       run: |
         powershell Compress-Archive -Path dist\QuantumCoBrain\* -DestinationPath QuantumCoBrain-Windows-x64.zip
 
-    - name: [macOS] Package DMG Installer
+    - name: Package Mac Assets
       if: matrix.os == 'macos-latest'
       run: |
         zip -r QuantumCoBrain-MacOS.dmg dist/QuantumCoBrain/
