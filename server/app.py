@@ -191,6 +191,46 @@ async def tune_knobs(request: Request):
     print(f"🎛️  [DATABASE WRITE] [USER:{user_id}] Parameter Shift Committed: {data}")
     return JSONResponse(content={"status": "success", "updated_state": user_state})
 
+@app.post("/api/simulate")
+async def execute_simulation_math(request: Request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse(content={"error": "Unauthorized"}, status_code=401)
+        
+    # 1. Fetch this specific operator's tracking row safely from the SQLite database
+    state = get_or_create_user_state(user_id)
+    noise = float(state.get("noise_amplitude", 0.12))
+    drift = float(state.get("gate_drift", 1.1792))
+    twirling_active = bool(state.get("pauli_twirling", False))
+    
+    # 2. Process deterministic NISQ noise models
+    # Establish baseline hardware-level decoherence and pulse calculation errors
+    base_leakage = (noise * 0.75) + ((drift / 100.0) * 0.25)
+    
+    if twirling_active:
+        # Suppress coherent over-rotation mathematically by randomizing into a stochastic channel
+        mitigated_leakage = base_leakage * 0.28 
+        fidelity_loss = mitigated_leakage * 0.4
+        insight = "Pauli Twirling ACTIVE: Coherent noise vector effectively randomized into standard stochastic channels. Error scaling transformed to sub-linear propagation profile."
+        leakage_final = mitigated_leakage
+    else:
+        # Unmitigated environmental interactions compound linearly
+        fidelity_loss = base_leakage * 1.35
+        insight = "WARNING: Unmitigated coherent pulse drift active. Matrix leakage compounding line-by-line. Circuit depth calculation execution threshold compromised."
+        leakage_final = base_leakage
+
+    # Scale cleanly to string percentages for simple frontend ingestion
+    leakage_pct = f"{min(max(leakage_final * 100, 0.0), 100.0):.2f}%"
+    fidelity_pct = f"{min(max((1.0 - fidelity_loss) * 100, 0.0), 100.0):.2f}%"
+    hardware_status = "STABLE" if leakage_final < 0.04 else "DEGRADED" if leakage_final < 0.12 else "CRITICAL ERROR"
+
+    return JSONResponse(content={
+        "status": hardware_status,
+        "leakage": leakage_pct,
+        "fidelity": fidelity_pct,
+        "insight": insight
+    })
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))

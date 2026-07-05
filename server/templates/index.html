@@ -118,6 +118,23 @@
     <span>Operator: <strong>{{ username }}</strong></span>
     <a href="/logout" class="logout-btn" style="margin-left: 15px; color: #ff5555; text-decoration: none; border: 1px solid #ff5555; padding: 4px 8px; border-radius: 4px;">Wipe Session (Logout)</a>
 </div>
+<!-- Inject this sidebar panel into your HTML layout -->
+<div id="diagnostics-panel" style="background: #111; color: #0f0; font-family: monospace; padding: 15px; border: 1px solid #333;">
+    <h3>📊 Telemetry Interpreter</h3>
+    <button id="run-sim-btn" style="background: #00ff00; color: #000; font-weight: bold; width: 100%; padding: 10px; cursor: pointer;">⚡ RUN NISQ EXPERIMENT</button>
+    
+    <hr style="border-color: #333;">
+    
+    <div id="simulation-results" style="margin-top: 15px; display: none;">
+        <p><strong>Hardware State:</strong> <span id="out-hardware" style="color: #ff5555;">CRITICAL</span></p>
+        <p><strong>Matrix Leakage Rate:</strong> <span id="out-leakage">0.0%</span></p>
+        <p><strong>Fidelity Loss ($1 - F$):</strong> <span id="out-fidelity">0.0%</span></p>
+        
+        <blockquote style="background: #222; border-left: 3px solid #00ff00; padding: 8px; margin: 10px 0;">
+            <p><strong>Co-Brain Insight:</strong> <span id="out-insight" style="color: #fff;">Configure parameters and run diagnostic loop...</span></p>
+        </blockquote>
+    </div>
+</div>
     <script>
         const container = document.getElementById('top-viewport');
         const scene = new THREE.Scene();
@@ -282,6 +299,35 @@
 
         syncFromBackend();
         setInterval(syncFromBackend, 1000);
+
+	document.getElementById('run-sim-btn').addEventListener('click', async () => {
+    const outputArea = document.getElementById('simulation-results');
+    const runBtn = document.getElementById('run-sim-btn');
+    
+    runBtn.innerText = "⏳ COMPILING CIRCUIT MATRIX...";
+    
+    try {
+        const response = await fetch('/api/simulate', { method: 'POST' });
+        const results = await response.json();
+        
+        // Populate the data interpreter plane fields natively
+        document.getElementById('out-hardware').innerText = results.status;
+        document.getElementById('out-leakage').innerText = results.leakage;
+        document.getElementById('out-fidelity').innerText = results.fidelity;
+        document.getElementById('out-insight').innerText = results.insight;
+        
+        // Color-code the status alert text
+        const statusColor = results.status === "STABLE" ? "#00ff00" : results.status === "DEGRADED" ? "#ffaa00" : "#ff5555";
+        document.getElementById('out-hardware').style.color = statusColor;
+        
+        // Reveal the diagnostic panel surface smoothly
+        outputArea.style.display = "block";
+    } catch (err) {
+        console.error("Simulation run failed:", err);
+    } finally {
+        runBtn.innerText = "⚡ RUN NISQ EXPERIMENT";
+    }
+});
     </script>
 </body>
 </html>
