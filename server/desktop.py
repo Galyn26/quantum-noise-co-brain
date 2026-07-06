@@ -298,16 +298,19 @@ def run_background_engine(window, bridge):
     bridge.initialize_runtime(window)
 
 
+def run_background_engine(window, bridge):
+    """Runs isolated on its own independent background thread."""
+    bridge.initialize_runtime(window)
+
+
 def main():
     print("🛰️  Initializing Native Desktop Co-Brain Engine via System Web-Core...")
 
     bridge = NativeBridge()
 
-    # 🎯 FIX: Swap "about:blank" for your actual local server origin.
-    # This allows WKWebView to accept and maintain secure Auth0 session cookies natively!
     window = webview.create_window(
         title="Quantum Noise Co-Brain Operator Console",
-        url="http://127.0.0.1:8443", 
+        url="http://127.0.0.1:8443", # Gives it a real domain context for webkit tokens
         js_api=bridge,
         width=1280,
         height=800,
@@ -315,13 +318,23 @@ def main():
         text_select=True
     )
 
-    # Scoped callback tracker to catch the code token post-login
-    window.events.loaded += lambda w=None: (
-        bridge.handle_url_shift(window.get_current_url()) 
-        if "desktop-callback" in window.get_current_url() else None
-    )
+    # 🎯 THE SOLUTION: Listen exclusively for the handoff.
+    # When Auth0 sends a successful login, it hits the callback. 
+    # This handler wakes up ONLY when it sees that URL, captures it, 
+    # and routes you right into your app dashboard!
+    def handle_navigation(w=None):
+        url = window.get_current_url() or ""
+        if "callback" in url:
+            print(f"📡 Auth0 Handshake Detected! Processing endpoint: {url}")
+            bridge.handle_url_shift(url)
 
+    window.events.loaded += handle_navigation
+
+    # Start the worker thread safely
     webview.start(run_background_engine, (window, bridge), debug=False)
 
+
+if __name__ == "__main__":
+    main()
 if __name__ == "__main__":
     main()
