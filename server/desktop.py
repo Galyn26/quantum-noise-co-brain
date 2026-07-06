@@ -281,6 +281,7 @@ class NativeBridge:
 
     def trigger_native_logout(self):
         self.perform_logout()
+        return "LOGOUT_COMPLETE" # 🎯 FIX: Keeps the asynchronous JS promise callback happy
 
     def push_tuning_parameters(self, patch):
         return self.api_client.call("POST", "/api/tune", self.token_payload, self.user_context, json_body=patch)
@@ -290,7 +291,22 @@ class NativeBridge:
 
     def fetch_backend_state(self):
         return self.api_client.call("GET", "/api/state", self.token_payload, self.user_context)
-
+   
+    def save_snapshot_dialog(self, json_data_str: str) -> None:
+        """Opens a secure native file window saving the snapshot without changing pages."""
+        try:
+            file_path = self.window.create_file_dialog(
+                webview.SAVE_DIALOG, # 🎯 FIX: Changed from SAVE_FILE to SAVE_DIALOG
+                directory=os.path.expanduser("~"),
+                file_types=("JSON Files (*.json)",),
+                save_filename=f"quantum_snapshot_{int(time.time())}.json"
+            )
+            if file_path:
+                with open(file_path, "w", encoding="utf-8") as file:
+                    file.write(json_data_str)
+                print(f"💾 Snapshot captured and successfully committed to: {file_path}")
+        except Exception as e:
+            print(f"❌ Failed to run local disk save pipeline: {e}")
 
 def run_background_engine(window, bridge):
     """Runs isolated on its own independent background thread."""

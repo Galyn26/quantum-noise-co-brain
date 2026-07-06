@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'BetaV*' # 🎯 Triggers exactly on BetaV1.0.0, BetaV1.0.1, etc.
+      - 'AlphaV*' # Added this just in case you tag it AlphaV1.0.0
 
 permissions:
   contents: write
@@ -61,12 +62,19 @@ jobs:
     - name: Compile Linux and Mac Binaries
       if: matrix.os != 'windows-latest'
       run: |
-        python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --add-data "server:server" server/desktop.py
+        python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --icon="server/templates/logo.png" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
+
+    # 🍏 APPENDED: Compiles a second standalone binary specifically targeting Intel (x86_64)
+    - name: Compile Mac Binary (Intel Target)
+      if: matrix.os == 'macos-latest'
+      run: |
+        python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain-Intel" --target-arch x86_64 --icon="server/templates/logo.icns" --add-data 
+"server/templates/desktop.html:server/templates" server/desktop.py
 
     - name: Compile Windows Exe
       if: matrix.os == 'windows-latest'
       run: |
-        python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" --add-data "server;server" server/desktop.py
+        python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" --icon="server/templates/logo.png" --add-data "server/templates/desktop.html;server/templates" server/desktop.py
 
     - name: Package Linux Assets
       if: matrix.os == 'ubuntu-latest'
@@ -82,11 +90,15 @@ jobs:
       if: matrix.os == 'macos-latest' || matrix.os == 'macos-14'
       run: |
         cd dist && zip -r ../QuantumCoBrain-MacOS.zip QuantumCoBrain.app
+        cd dist && zip -r ../QuantumCoBrain-MacOS-Intel.zip QuantumCoBrain-Intel.app
 
     - name: Upload Native OS Asset to GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        files: ${{ matrix.asset_path }}
+        files: |
+          ${{ matrix.asset_path }}
+          QuantumCoBrain-MacOS-Intel.zip
+        fail_on_unmatched_files: false
         name: Quantum Co-Brain Console ${{ github.ref_name }}
         body: |
           ## 🛰️ Quantum Co-Brain Control Desk - Live Multi-Platform Release
@@ -94,6 +106,7 @@ jobs:
           Welcome to the official deployment stream of **${{ github.ref_name }}**.
           
           ### 🛠️ System Architecture Improvements
+          * **Trademark Engine Branding:** Embedded native cross-platform icon sets across execution contexts.
           * **Central Cloud Tracking:** Migrated active state variable storage from isolated local SQLite files to a centralized cloud PostgreSQL database cluster.
           * **Unified Framework Overrides:** Implemented hybrid validation mechanics capable of authenticating raw browser cookie payloads alongside secure desktop headers natively.
           * **Zero-Latency Buffers:** Refactored the local telemetry snapshots panel to handle memory-buffered exports directly on native machines.
