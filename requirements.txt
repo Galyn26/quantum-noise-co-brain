@@ -11,3 +11,5 @@ pysqlite3-binary
 PyQt5
 qtpy
 PyQtWebEngine
+sqlalchemy
+psycopg2-binary

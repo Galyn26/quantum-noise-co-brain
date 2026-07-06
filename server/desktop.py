@@ -1,18 +1,15 @@
 import base64
 import hashlib
-import importlib
 import json
 import os
 import secrets
 import sys
-import threading
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import httpx
-import uvicorn
 from dotenv import load_dotenv
 from PyQt5.QtCore import QObject, Qt, QUrl, pyqtSlot
 from PyQt5.QtWebChannel import QWebChannel
@@ -23,21 +20,18 @@ from PyQt5.QtWidgets import QApplication, QLabel, QPushButton, QStackedWidget, Q
 
 @dataclass(frozen=True)
 class DesktopConfig:
-    port: int = 8443
+    # TODO: Replace with your actual live Render app URL
+    production_url: str = "https://quantum-noise-co-brain-desktop.onrender.com" 
     auth0_domain: str = "dev-cn0kk0ltplgxom8s.us.auth0.com"
     auth0_client_id: str = "ZYlx455K5OyuZrnukz7mGBuK76dqIolm"
 
     @property
     def server_url(self) -> str:
-        return f"http://127.0.0.1:{self.port}"
-
-    @property
-    def status_url(self) -> str:
-        return f"{self.server_url}/api/status"
+        return self.production_url
 
     @property
     def redirect_uri(self) -> str:
-        return f"{self.server_url}/desktop-callback"
+        return "http://127.0.0.1:8443/desktop-callback"
 
     @property
     def authorize_url(self) -> str:
@@ -56,15 +50,6 @@ if getattr(sys, "_MEIPASS", None):
     SERVER_DIR = os.path.join(sys._MEIPASS, "server")
 else:
     SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
-
-PROJECT_ROOT = os.path.dirname(SERVER_DIR)
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
-
-def _load_runtime_env() -> None:
-    packaged_env_path = os.path.join(SERVER_DIR, ".env")
-    load_dotenv(packaged_env_path, override=False)
 
 
 def _decode_jwt_payload(jwt_token: str) -> Dict[str, Any]:
@@ -116,56 +101,6 @@ class SessionTokenStore:
             pass
 
 
-class ServerManager:
-    def __init__(self, config: DesktopConfig):
-        self._config = config
-        self._thread: Optional[threading.Thread] = None
-        self._server: Optional[uvicorn.Server] = None
-        self._lock = threading.Lock()
-
-    def _run_fastapi(self) -> None:
-        _load_runtime_env()
-        app_module = importlib.import_module("server.app")
-        app_module = importlib.reload(app_module)
-        uvicorn_config = uvicorn.Config(
-            app_module.app,
-            host="127.0.0.1",
-            port=self._config.port,
-            log_level="warning",
-        )
-        self._server = uvicorn.Server(uvicorn_config)
-        self._server.run()
-
-    def start(self) -> None:
-        with self._lock:
-            if self._thread and self._thread.is_alive():
-                return
-            self._thread = threading.Thread(target=self._run_fastapi, daemon=True)
-            self._thread.start()
-
-    def wait_until_ready(self, timeout_seconds: float = 5.0) -> bool:
-        deadline = time.time() + timeout_seconds
-        while time.time() < deadline:
-            try:
-                with httpx.Client(timeout=0.7) as client:
-                    response = client.get(self._config.status_url)
-                if response.status_code == 200:
-                    return True
-            except httpx.HTTPError:
-                pass
-            time.sleep(0.2)
-        return False
-
-    def stop(self) -> None:
-        with self._lock:
-            if self._server:
-                self._server.should_exit = True
-            active_thread = self._thread
-
-        if active_thread and active_thread.is_alive():
-            active_thread.join(timeout=4.0)
-
-
 class LocalApiClient:
     def __init__(self, config: DesktopConfig):
         self._config = config
@@ -177,11 +112,10 @@ class LocalApiClient:
         token_payload: Optional[Dict[str, Any]],
         user_context: Optional[Dict[str, str]],
         json_body: Optional[Dict[str, Any]] = None,
-        query: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         url = f"{self._config.server_url}{path}"
         headers: Dict[str, str] = {"Accept": "application/json"}
-        params = dict(query or {})
+        params = {}
 
         if token_payload:
             auth_token = token_payload.get("access_token") or token_payload.get("id_token")
@@ -193,13 +127,13 @@ class LocalApiClient:
             username = user_context.get("username")
             if user_id:
                 headers["X-QCB-User-Id"] = user_id
-                params.setdefault("user_id", user_id)
+                params["user_id"] = user_id
             if username:
                 headers["X-QCB-User-Name"] = username
-                params.setdefault("username", username)
+                params["username"] = username
 
         try:
-            with httpx.Client(timeout=5.0) as client:
+            with httpx.Client(timeout=10.0) as client:
                 response = client.request(
                     method=method.upper(),
                     url=url,
@@ -256,18 +190,24 @@ class NativeBridge(QObject):
 
     @pyqtSlot(result="QVariantMap")
     def get_user_context(self):
-        # Fall back to an empty dictionary if no session exists
         ctx = self.main_window._user_context or {}
-        # Defensive normalization: Ensure everything passing to JS is a clean string primitive
         return {str(k): str(v) for k, v in ctx.items() if v is not None}
 
     @pyqtSlot()
     def trigger_native_logout(self):
         self.main_window.perform_logout()
 
+    @pyqtSlot("QVariantMap", result="QVariantMap")
+    def push_tuning_parameters(self, patch):
+        return self.main_window._api_client.call(
+            "POST", "/api/tune",
+            self.main_window._token_payload,
+            self.main_window._user_context,
+            json_body=patch
+        )
+
     @pyqtSlot(result="QVariantMap")
     def run_nisq_experiment(self):
-        # Explicitly routes the simulation call using your native token/headers pipeline
         return self.main_window._api_client.call(
             "POST", "/api/simulate", 
             self.main_window._token_payload, 
@@ -276,18 +216,18 @@ class NativeBridge(QObject):
 
     @pyqtSlot(result="QVariantMap")
     def fetch_backend_state(self):
-        # Let Python handle the HTTP call safely inside its own thread context
         return self.main_window._api_client.call(
             "GET", "/api/state",
             self.main_window._token_payload,
             self.main_window._user_context
         )
 
+
 class DesktopWindow(QWidget):
     AUTH_STATE_INDEX = 0
     DASHBOARD_STATE_INDEX = 1
 
-    def __init__(self, config: DesktopConfig, server_manager: ServerManager):
+    def __init__(self, config: DesktopConfig, server_manager: Optional[Any] = None):
         super().__init__()
         self._config = config
         self._server_manager = server_manager
@@ -469,47 +409,28 @@ class DesktopWindow(QWidget):
         self.start_pkce_login(force_prompt=True)
 
     def closeEvent(self, event):  # noqa: N802
-        self._server_manager.stop()
+        if self._server_manager:
+            self._server_manager.stop()
         super().closeEvent(event)
 
 
 def main() -> int:
-    print("🛰️  Initializing Desktop Co-Brain Engine...")
+    print("🛰️  Initializing Native Desktop Co-Brain Engine...")
 
-    # 1. Set the global sharing attributes BEFORE creating the application object
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
-    
-    # 2. To get rid of the warning entirely while avoiding a segfault:
-    # We pass the attribute flag directly, or we can just tell Python to hide the C++ stderr warning.
-    # Instantiating the app first is mandatory for your Mac's stability here.
     app = QApplication(sys.argv)
-
-    # 3. Initialize the WebEngine
     QtWebEngine.initialize()
 
-    # 4. Now override the CORS security settings
     from PyQt5.QtWebEngineWidgets import QWebEngineSettings
     QWebEngineSettings.globalSettings().setAttribute(
         QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
     )
-    
-    # ... rest of your code remains exactly the same ...
-    # 4. Spin up your background server pipeline
-    server_manager = ServerManager(CONFIG)
-    server_manager.start()
-    server_ready = server_manager.wait_until_ready(timeout_seconds=10.0)
-    if not server_ready:
-        print("⚠️  Local API did not report ready state. Desktop will continue in degraded mode.")
 
-    # 5. Build and render the window
-    window = DesktopWindow(CONFIG, server_manager)
+    window = DesktopWindow(CONFIG, server_manager=None) 
     window.show()
     
-    exit_code = app.exec_()
+    return app.exec_()
 
-    server_manager.stop()
-    print("🔌 Desktop Session Terminated cleanly.")
-    return exit_code
 
 if __name__ == "__main__":
     sys.exit(main())
