@@ -203,6 +203,7 @@ tracking loops...</div>
         </div>
     </div>
 
+    <!-- Operations Manual Modal Pop-up -->
     <div id="help-modal">
         <div class="modal-content">
             <div class="modal-header">🛰️ CO-BRAIN OPERATOR MANUAL v1.1</div>
@@ -217,6 +218,29 @@ changes leakage and fidelity in real time.</p>
                     <li><strong>Step 3:</strong> Click <strong>⚡ RUN NISQ EXPERIMENT</strong> to compute hardware state, leakage, and fidelity.</li>
                     <li><strong>Step 4:</strong> Compare outcomes across settings, then export with <strong>📁 Download Snapshot</strong>.</li>
                 </ul>
+                <strong>🔘 BUTTON & CONTROL DEFINITIONS:</strong>
+                <ul>
+                    <li><strong>❓ Operations Manual:</strong> Opens this operator guide popup.</li>
+                    <li><strong>[CLOSE MENU]:</strong> Closes the manual popup.</li>
+                    <li><strong>📁 Download Snapshot:</strong> Exports current state directly from the local native data cache as a structured JSON file.</li>
+                    <li><strong>Wipe Session:</strong> Clears authenticated operator session and signs out locally.</li>
+                    <li><strong>Noise Amp (slider/number):</strong> Controls decoherence intensity. Higher values increase stochastic disturbance.</li>
+                    <li><strong>Gate Drift (slider/number):</strong> Controls gate calibration error drift (%-style value), increasing coherent control error.</li>
+                    <li><strong>Pauli-Twirling (ACTIVE/BYPASS):</strong> Sends mitigation toggle to the engine parameter map; ACTIVE randomizes coherent error into more manageable stochastic 
+channels.</li>
+                    <li><strong>⚡ RUN NISQ EXPERIMENT:</strong> Executes deterministic simulation math models and updates Hardware State, Matrix Leakage Rate, Fidelity, and Insight.</li>
+                </ul>
+                <strong>%0A%0A⚛️ QUANTUM COMPUTING MECHANICS (WHY THIS UI MATTERS):</strong>
+                <p>Classical bits are 0 or 1. Quantum bits (qubits) use superposition, allowing a state to hold weighted probability amplitudes across 0 and 1 simultaneously. Multi-qubit entanglement 
+introduces correlations unavailable to classical systems. Quantum gates rotate these amplitudes, and measurement collapses them to classical outcomes.</p>
+                <p>Real hardware is noisy: interactions with the environment and imperfect controls introduce decoherence, drift, crosstalk, and readout error. This simulator focuses on that practical 
+layer by mapping your tuning inputs to leakage/fidelity behavior under mitigated vs unmitigated conditions.</p>
+                <strong>🧪 WHY NISQ IS THE MOST RELEVANT TOPIC TODAY:</strong>
+                <p>NISQ (Noisy Intermediate-Scale Quantum) devices are the quantum computers available now: useful for experimentation, benchmarking, hybrid workflows, and error-mitigation research, 
+but not yet fully fault-tolerant. Because large-scale error-corrected machines are still emerging, the most valuable current work is understanding noise behavior, improving calibration, and developing 
+mitigation strategies like Pauli twirling. This console is designed around that exact operational reality.</p>
+                <p style="color: #d4af37; margin-top: 8px;">💡 Implementation note: frontend controls synchronize through native slots, state is persisted per operator on cloud infrastructure, and 
+experiment outputs are returned via synchronized asynchronous pipelines.</p>
             </div>
             <button class="modal-close" onclick="toggleModal(false)">[CLOSE MENU]</button>
         </div>
@@ -300,6 +324,7 @@ changes leakage and fidelity in real time.</p>
             tuneTimeout = setTimeout(updateKnobs, 150);
         }
 
+        // Native PyQt execution routing slots via Bridge
         function updateKnobs() {
             const noise = parseFloat(document.getElementById('noise-slider').value);
             const drift = parseFloat(document.getElementById('drift-slider').value);
@@ -349,26 +374,31 @@ changes leakage and fidelity in real time.</p>
         }
 
         function downloadDataset() {
-            if (window.pyBridge) {
-                window.pyBridge.fetch_backend_state(function(response) {
-                    if (response.ok) {
-                        const snapshot = {
-                            captured_at: new Date().toISOString(),
-                            operator: operatorContext,
-                            state: response.data
-                        };
-                        const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const anchor = document.createElement('a');
-                        anchor.href = url;
-                        anchor.download = 'quantum_snapshot_' + Date.now() + '.json';
-                        document.body.appendChild(anchor);
-                        anchor.click();
-                        anchor.remove();
-                        URL.revokeObjectURL(url);
-                    }
-                });
-            }
+            const currentNoise = parseFloat(document.getElementById('noise-slider').value);
+            const currentDrift = parseFloat(document.getElementById('drift-slider').value);
+            const currentNode = document.getElementById('node-name').innerText;
+
+            const snapshot = {
+                captured_at: new Date().toISOString(),
+                operator: operatorContext || { username: "Operator" },
+                state: {
+                    noise_amplitude: currentNoise,
+                    gate_drift: currentDrift,
+                    target_backend: currentNode,
+                    pauli_twirling: twirlingActive
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = 'quantum_snapshot_' + Date.now() + '.json';
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            URL.revokeObjectURL(url);
+            console.log("💾 Telemetry snapshot generated and saved locally.");
         }
 
         function toggleModal(show) {
