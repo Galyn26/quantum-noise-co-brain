@@ -290,11 +290,19 @@ class NativeBridge:
         return self.api_client.call("GET", "/api/state", self.token_payload, self.user_context)
 
 
+def run_background_engine(window, bridge):
+    """
+    Runs isolated on its own independent background thread. 
+    Safe to boot runtimes and track background states without touching the UI canvas thread.
+    """
+    bridge.initialize_runtime(window)
+
+
 def main():
     print("🛰️  Initializing Native Desktop Co-Brain Engine via System Web-Core...")
-    
+
     bridge = NativeBridge()
-    
+
     window = webview.create_window(
         title="Quantum Noise Co-Brain Operator Console",
         url="about:blank",
@@ -303,12 +311,9 @@ def main():
         height=800,
         min_size=(1024, 768)
     )
-    
-    # 🚨 TYPE-SAFE EVENT BINDINGS
-    window.events.shown += lambda w=None: bridge.initialize_runtime(window)
-    window.events.loaded += lambda w=None: bridge.handle_url_shift(window.get_current_url())
 
-    webview.start(debug=False)
+    # 🚀 The background worker handles initialization cleanly in its own space
+    webview.start(run_background_engine, (window, bridge), debug=False)
 
 if __name__ == "__main__":
     main()
