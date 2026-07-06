@@ -64,7 +64,7 @@ jobs:
       run: |
         python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --icon="server/templates/logo.png" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
 
-    # 🍏 APPENDED: Compiles a second standalone binary specifically targeting Intel (x86_64)
+    # 🍏 FIXED: Added vertical pipe '|' for clean multi-line shell evaluation
     - name: Compile Mac Binary (Intel Target)
       if: matrix.os == 'macos-latest'
       run: |
