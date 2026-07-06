@@ -230,7 +230,7 @@ changes leakage and fidelity in real time.</p>
 channels.</li>
                     <li><strong>⚡ RUN NISQ EXPERIMENT:</strong> Executes deterministic simulation math models and updates Hardware State, Matrix Leakage Rate, Fidelity, and Insight.</li>
                 </ul>
-                <strong>%0A%0A⚛️ QUANTUM COMPUTING MECHANICS (WHY THIS UI MATTERS):</strong>
+                <strong>⚛️ QUANTUM COMPUTING MECHANICS (WHY THIS UI MATTERS):</strong>
                 <p>Classical bits are 0 or 1. Quantum bits (qubits) use superposition, allowing a state to hold weighted probability amplitudes across 0 and 1 simultaneously. Multi-qubit entanglement 
 introduces correlations unavailable to classical systems. Quantum gates rotate these amplitudes, and measurement collapses them to classical outcomes.</p>
                 <p>Real hardware is noisy: interactions with the environment and imperfect controls introduce decoherence, drift, crosstalk, and readout error. This simulator focuses on that practical 
@@ -324,7 +324,6 @@ experiment outputs are returned via synchronized asynchronous pipelines.</p>
             tuneTimeout = setTimeout(updateKnobs, 150);
         }
 
-        // Native PyQt execution routing slots via Bridge
         function updateKnobs() {
             const noise = parseFloat(document.getElementById('noise-slider').value);
             const drift = parseFloat(document.getElementById('drift-slider').value);
@@ -440,8 +439,8 @@ experiment outputs are returned via synchronized asynchronous pipelines.</p>
             if (window.pyBridge) window.pyBridge.trigger_native_logout();
         });
 
-        new QWebChannel(qt.webChannelTransport, function(channel) {
-            window.pyBridge = channel.objects.pyBridge;
+        // 🌉 DUAL RUNTIME TRACKER INTERCEPT HANDSHAKE
+        function initOperationalBridge() {
             window.pyBridge.get_user_context(function(context) {
                 if (!context) {
                     document.getElementById('user-display').innerText = 'Unknown';
@@ -451,7 +450,26 @@ experiment outputs are returned via synchronized asynchronous pipelines.</p>
                 document.getElementById('user-display').innerText = context.username || 'Operator';
                 startStateSyncLoop();
             });
-        });
+        }
+
+        // Check if running in the ultra-lightweight pywebview environment
+        if (window.pywebview && window.pywebview.api) {
+            console.log("🛰️ Lightweight System Web-Core Detected.");
+            window.pyBridge = {
+                get_user_context: function(cb) { window.pywebview.api.get_user_context().then(cb); },
+                trigger_native_logout: function() { window.pywebview.api.trigger_native_logout(); },
+                push_tuning_parameters: function(p, cb) { window.pywebview.api.push_tuning_parameters(p).then(cb); },
+                run_nisq_experiment: function(cb) { window.pywebview.api.run_nisq_experiment().then(cb); },
+                fetch_backend_state: function(cb) { window.pywebview.api.fetch_backend_state().then(cb); }
+            };
+            initOperationalBridge();
+        } else {
+            // Fallback cleanly to classic PyQt QWebChannel if loaded locally or over development servers
+            new QWebChannel(qt.webChannelTransport, function(channel) {
+                window.pyBridge = channel.objects.pyBridge;
+                initOperationalBridge();
+            });
+        }
     </script>
 </body>
 </html>
