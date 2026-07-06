@@ -309,10 +309,19 @@ def main():
         js_api=bridge,
         width=1280,
         height=800,
-        min_size=(1024, 768)
+        min_size=(1024, 768),
+        text_select=True,  # Allows the UI fields to accept input smoothly
+        zoomable=False
     )
 
-    # 🚀 The background worker handles initialization cleanly in its own space
+    # 🎯 OPTIMIZED TRACKER: Only intercepts the exact local callback to capture the token, 
+    # ignoring all the messy intermediate Google/Auth0 login screen refreshes!
+    window.events.loaded += lambda w=None: (
+        bridge.handle_url_shift(window.get_current_url()) 
+        if "desktop-callback" in window.get_current_url() else None
+    )
+
+    # Start the isolated engine thread
     webview.start(run_background_engine, (window, bridge), debug=False)
 
 if __name__ == "__main__":
