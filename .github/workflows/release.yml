@@ -66,7 +66,7 @@ jobs:
     - name: Compile Windows Exe
       if: matrix.os == 'windows-latest'
       run: |
-        python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" --collect-all "qtpy" --collect-all "PyQt5" --collect-all "PyQtWebEngine" --add-data "server;server" server/desktop.py
+        python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" --add-data "server;server" server/desktop.py
 
     - name: Package Linux Assets
       if: matrix.os == 'ubuntu-latest'
