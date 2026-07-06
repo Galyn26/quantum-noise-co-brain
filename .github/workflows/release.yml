@@ -121,6 +121,6 @@ jobs:
           ### 🛠️ System Architecture Improvements
           * **Native Matrix Targets:** Isolated ARM64 and Intel x86_64 compilation contexts completely onto native physical runners.
           * **Universal Backward Compatibility:** Enforced `MACOSX_DEPLOYMENT_TARGET: 13.0` across Apple builds and wrapped the Linux workspace inside an Ubuntu 20.04 container matrix for optimized 
-glibc network-mesh support.
+          glibc network-mesh support.
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
