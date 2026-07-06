@@ -49,26 +49,31 @@ jobs:
       run: |
         python -m pip install --upgrade pip setuptools wheel
         pip install -r requirements.txt
-        pip install pyinstaller
+        pip install pyinstaller Pillow
 
-    - name: Install Cross Platform Matrix
+    - name: Install Cross Platform Matrix (With Pillow for Windows Auto-Icon Conversion)
       if: matrix.os != 'ubuntu-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
         grep -v "pysqlite3-binary" requirements.txt > requirements_cross.txt
         pip install -r requirements_cross.txt
-        pip install pyinstaller
+        pip install pyinstaller Pillow
 
+    # 🍏 FIXED: Mac uses logo.icns directly now so it doesn't try to read a PNG
     - name: Compile Linux and Mac Binaries
       if: matrix.os != 'windows-latest'
       run: |
-        python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --icon="server/templates/logo.png" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
+        if [ "${{ matrix.os }}" = "macos-latest" ]; then
+          python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --icon="server/templates/logo.icns" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
+        else
+          python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --icon="server/templates/logo.png" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
+        fi
 
-    # 🍏 FIXED: Added vertical pipe '|' for clean multi-line shell evaluation
     - name: Compile Mac Binary (Intel Target)
       if: matrix.os == 'macos-latest'
-      run: python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain-Intel" --target-arch x86_64 --icon="server/templates/logo.icns" --add-data 
-       "server/templates/desktop.html:server/templates" server/desktop.py
+      run: |
+        python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain-Intel" --target-arch x86_64 --icon="server/templates/logo.icns" --add-data 
+         "server/templates/desktop.html:server/templates" server/desktop.py
 
     - name: Compile Windows Exe
       if: matrix.os == 'windows-latest'
