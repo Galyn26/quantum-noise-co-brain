@@ -61,8 +61,7 @@ jobs:
     - name: Compile Linux and Mac Binaries
       if: matrix.os != 'windows-latest'
       run: |
-        # Use --noconfirm and ensure --windowed creates a clean native macOS bundle
-        python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --collect-all "qtpy" --collect-all "PyQt5" --collect-all "PyQtWebEngine" --add-data "server:server" server/desktop.py
+        python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --add-data "server:server" server/desktop.py
 
     - name: Compile Windows Exe
       if: matrix.os == 'windows-latest'
