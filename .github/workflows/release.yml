@@ -11,100 +11,107 @@ permissions:
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
+    name: Build on ${{ matrix.os }} (${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }} # 🐳 Spins up the Docker container context if defined
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, macos-latest, windows-latest]
         include:
-          - os: ubuntu-20.04
+          # 🐧 Backwards-Compatible Linux Build (Runs in an older Ubuntu 20.04 container on a modern host)
+          - os: ubuntu-latest
+            arch: x64
+            container: ubuntu:20.04
             artifact_name: QuantumCoBrain-Linux-x64.tar.gz
             asset_path: QuantumCoBrain-Linux-x64.tar.gz
-          - os: macos-latest
-            artifact_name: QuantumCoBrain-MacOS.zip
-            asset_path: QuantumCoBrain-MacOS.zip
+          
+          # 🪟 Windows Native Build
           - os: windows-latest
+            arch: x64
             artifact_name: QuantumCoBrain-Windows-x64.zip
             asset_path: QuantumCoBrain-Windows-x64.zip
+          
+          # 🍏 Apple Silicon Build (M1/M2/M3 natively built on ARM64 runners)
+          - os: macos-latest
+            arch: arm64
+            artifact_name: QuantumCoBrain-MacOS.zip
+            asset_path: QuantumCoBrain-MacOS.zip
+          
+          # 🍏 Native Mac Intel Build (Uses active macos-15 Intel host, targets macOS 13 baseline)
+          - os: macos-15-intel
+            arch: x86_64
+            artifact_name: QuantumCoBrain-MacOS-Intel.zip
+            asset_path: QuantumCoBrain-MacOS-Intel.zip
 
     steps:
     - name: Checkout Source Code
       uses: actions/checkout@v4
 
     - name: Set up Python Sandbox Environment
+      # Containers handle their own Python setup natively below
+      if: matrix.container == ''
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
         cache: 'pip'
 
-    - name: Install Linux System Headers
-      if: matrix.os == 'ubuntu-20.04'
+    # --- 🐳 DOCKER LINUX DEPENDENCY MANIFEST ---
+    - name: Bootstrap Python Inside Linux Docker Container
+      if: matrix.container == 'ubuntu:20.04'
       run: |
-        sudo apt-get update
-        sudo apt-get install -y libsqlite3-dev libgirepository1.0-dev libcairo2-dev pkg-config
+        apt-get update
+        apt-get install -y python3 python3-pip python3-setuptools python3-wheel libsqlite3-dev libgirepository1.0-dev libcairo2-dev pkg-config git zip
+        python3 -m pip install --upgrade pip
 
-    - name: Install Linux Python Matrix
-      if: matrix.os == 'ubuntu-20.04'
+    # --- STANDARD DEPENDENCY MATRIX ---
+    - name: Install Linux Python Dependencies
+      if: matrix.container == 'ubuntu:20.04'
       run: |
-        python -m pip install --upgrade pip setuptools wheel
-        pip install -r requirements.txt
-        pip install pyinstaller Pillow
+        pip3 install -r requirements.txt
+        pip3 install pyinstaller Pillow
 
     - name: Install Cross Platform Matrix
-      if: matrix.os != 'ubuntu-20.04'
+      if: matrix.container == ''
       run: |
         python -m pip install --upgrade pip setuptools wheel
         grep -v "pysqlite3-binary" requirements.txt > requirements_cross.txt
         pip install -r requirements_cross.txt
         pip install pyinstaller Pillow
 
-    - name: Compile Linux and Mac Binaries
-      if: matrix.os != 'windows-latest'
-      env:
-        MACOSX_DEPLOYMENT_TARGET: "13.0"
-      run: |
-        if [ "${{ matrix.os }}" = "macos-latest" ]; then
-          python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --icon="server/templates/logo.icns" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
-        else
-          python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --icon="server/templates/logo.png" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
-        fi
-
-    # 🍏 FIXED: Forces the shell to execute under Intel translation mode so PyInstaller compiles a clean x86_64 slice
-    - name: Compile Mac Binary (Intel Target)
-      if: matrix.os == 'macos-latest'
-      env:
-        MACOSX_DEPLOYMENT_TARGET: "13.0"
-      run: arch -x86_64 python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain-Intel-Target" --target-arch x86_64 --icon="server/templates/logo.icns" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
+    # --- COMPILATION MATRIX ---
+    - name: Compile Linux Binary (Container Base)
+      if: matrix.container == 'ubuntu:20.04'
+      run: python3 -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --icon="server/templates/logo.png" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
 
     - name: Compile Windows Exe
       if: matrix.os == 'windows-latest'
-      run: |
-        python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" --icon="server/templates/logo.png" --add-data "server/templates/desktop.html;server/templates" server/desktop.py
+      run: python -m PyInstaller --clean --noconsole --name="QuantumCoBrain" --icon="server/templates/logo.png" --add-data "server/templates/desktop.html;server/templates" server/desktop.py
 
+    - name: Compile Mac Binary (Native Arch)
+      if: startsWith(matrix.os, 'macos')
+      env:
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+      run: python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --target-arch ${{ matrix.arch }} --icon="server/templates/logo.icns" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
+
+    # --- PACKAGING ---
     - name: Package Linux Assets
-      if: matrix.os == 'ubuntu-20.04'
-      run: |
-        tar -czf QuantumCoBrain-Linux-x64.tar.gz -C dist QuantumCoBrain/
+      if: matrix.container == 'ubuntu:20.04'
+      run: tar -czf QuantumCoBrain-Linux-x64.tar.gz -C dist QuantumCoBrain/
 
     - name: Package Windows Assets
       if: matrix.os == 'windows-latest'
-      run: |
-        powershell Compress-Archive -Path dist\QuantumCoBrain\* -DestinationPath QuantumCoBrain-Windows-x64.zip
+      run: powershell Compress-Archive -Path dist\QuantumCoBrain\* -DestinationPath QuantumCoBrain-Windows-x64.zip
 
     - name: Package Mac Assets
-      if: matrix.os == 'macos-latest'
-      run: |
-        cd dist && zip -r ../QuantumCoBrain-MacOS.zip QuantumCoBrain.app
-        cd dist && zip -r ../QuantumCoBrain-MacOS-Intel.zip QuantumCoBrain-Intel-Target.app
+      if: startsWith(matrix.os, 'macos')
+      run: cd dist && zip -r ../${{ matrix.asset_path }} QuantumCoBrain.app
 
+    # --- DEPLOYMENT STREAM ---
     - name: Upload Native OS Asset to GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        files: |
-          ${{ matrix.asset_path }}
-          QuantumCoBrain-MacOS-Intel.zip
-        fail_on_unmatched_files: false
+        files: ${{ matrix.asset_path }}
+        fail_on_unmatched_files: true
         name: Quantum Co-Brain Console ${{ github.ref_name }}
         body: |
           ## 🛰️ Quantum Co-Brain Control Desk - Live Multi-Platform Release
@@ -112,9 +119,8 @@ jobs:
           Welcome to the official deployment stream of **${{ github.ref_name }}**.
           
           ### 🛠️ System Architecture Improvements
-          * **Trademark Engine Branding:** Embedded native cross-platform icon sets across execution contexts.
-          * **Legacy Linux Mesh Support:** Re-targeted compilation runner to Ubuntu 20.04 to secure full backwards compatibility for custom-built distribution setups.
-          * **Unified Framework Overrides:** Implemented hybrid validation mechanics capable of authenticating raw browser cookie payloads alongside secure desktop headers natively.
-          * **Zero-Latency Buffers:** Refactored the local telemetry snapshots panel to handle memory-buffered exports directly on native machines.
+          * **Native Matrix Targets:** Isolated ARM64 and Intel x86_64 compilation contexts completely onto native physical runners.
+          * **Universal Backward Compatibility:** Enforced `MACOSX_DEPLOYMENT_TARGET: 13.0` across Apple builds and wrapped the Linux workspace inside an Ubuntu 20.04 container matrix for optimized 
+glibc network-mesh support.
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
