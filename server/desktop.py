@@ -304,14 +304,11 @@ def main():
         min_size=(1024, 768)
     )
     
-    # 🚨 FIXED: Added 'w' so pywebview can pass the window instance safely without throwing a TypeError
-    window.events.shown += lambda w: bridge.initialize_runtime(window)
-    
-    # 🚨 FIXED: Added 'w' here too so the engine passes the url shift check smoothly
-    window.events.loaded += lambda w: bridge.handle_url_shift(window.get_current_url())
+    # 🚨 TYPE-SAFE EVENT BINDINGS
+    window.events.shown += lambda w=None: bridge.initialize_runtime(window)
+    window.events.loaded += lambda w=None: bridge.handle_url_shift(window.get_current_url())
 
-    webview.start(debug=False) # Keep debug False for her machine so the console panel stays hidden
-
+    webview.start(debug=False)
 
 if __name__ == "__main__":
     main()
