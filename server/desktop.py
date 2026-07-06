@@ -177,8 +177,8 @@ class AuthView(QWidget):
         self.status_label.setWordWrap(True)
         self.sign_in_button = QPushButton("Sign in with Auth0")
         self.web_view = QWebEngineView()
-        self.web_view.setHtml("<html><body>Press 'Sign in with Auth0' to begin.</body></html>")
-
+        # Clean slate initializing - avoids pre-render crashes
+        
         layout = QVBoxLayout()
         layout.addWidget(self.status_label)
         layout.addWidget(self.sign_in_button)
@@ -187,7 +187,6 @@ class AuthView(QWidget):
 
     def set_status(self, message: str) -> None:
         self.status_label.setText(message)
-
 
 class DashboardView(QWidget):
     def __init__(self):
@@ -289,7 +288,9 @@ class DesktopWindow(QWidget):
         token_payload = self._token_store.load_valid()
         if not token_payload:
             self.stack.setCurrentIndex(self.AUTH_STATE_INDEX)
-            self.auth_view.set_status("Secure token session missing. Sign in to initialize workspace.")
+            self.auth_view.set_status("Secure token session missing. Routing to live authorization gateway...")
+            # Automatically load your live Render app's secure login channel!
+            self.auth_view.web_view.setUrl(QUrl(f"{self._config.server_url}/login"))
             return
 
         user_context = self._extract_user_context(token_payload)
