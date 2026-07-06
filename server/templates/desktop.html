@@ -2,25 +2,32 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Quantum Cockpit Controls - Desktop Console</title>
-    <!-- Qt WebChannel bridge to native PyQt shell -->
-    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #05030f;
+        }
 
         body {
             background: radial-gradient(circle at center, #130c2e 0%, #05030f 100%);
             color: #ebdcb8;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
         }
 
+        /* 📏 Flexbox UI Sandbox - Preserves geometry on scale updates */
         #top-viewport {
-            flex: 12;
+            flex: 1 1 0%;
+            min-height: 0;
             position: relative;
             border-bottom: 2px solid rgba(212, 175, 55, 0.3);
             background: radial-gradient(circle, #100a26 0%, #06040f 100%);
@@ -37,7 +44,7 @@
         }
 
         #bottom-controls {
-            height: 48vh;
+            flex: 0 0 380px; 
             background-color: #080612;
             padding: 20px;
             display: grid;
@@ -45,6 +52,7 @@
             gap: 20px;
             box-shadow: inset 0 15px 30px rgba(0,0,0,0.9);
             border-top: 1px solid rgba(138, 43, 226, 0.2);
+            box-sizing: border-box;
         }
 
         .btn-group { position: absolute; top: 15px; right: 15px; display: flex; gap: 10px; z-index: 10; }
@@ -76,6 +84,7 @@
             flex-direction: column;
             justify-content: space-between;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            min-height: 0;
         }
         .panel-title { font-size: 12px; color: #d4af37; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-shadow: 0 0 6px rgba(212,175,55,0.2); }
         .knob-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;}
@@ -290,10 +299,13 @@ experiment outputs are returned via synchronized asynchronous pipelines.</p>
         }
         animate();
 
+        // 📏 Smooth Responsive Engine Calculation Pass
         window.addEventListener('resize', function() {
-            camera.aspect = container.clientWidth / container.clientHeight;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
             camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setSize(w, h);
         });
 
         function updateVectorFeed() {
@@ -372,6 +384,7 @@ experiment outputs are returned via synchronized asynchronous pipelines.</p>
             }
         }
 
+        // 📁 Pivot file output straight to the native save dialog loop
         function downloadDataset() {
             const currentNoise = parseFloat(document.getElementById('noise-slider').value);
             const currentDrift = parseFloat(document.getElementById('drift-slider').value);
@@ -388,16 +401,20 @@ experiment outputs are returned via synchronized asynchronous pipelines.</p>
                 }
             };
 
-            const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const anchor = document.createElement('a');
-            anchor.href = url;
-            anchor.download = 'quantum_snapshot_' + Date.now() + '.json';
-            document.body.appendChild(anchor);
-            anchor.click();
-            anchor.remove();
-            URL.revokeObjectURL(url);
-            console.log("💾 Telemetry snapshot generated and saved locally.");
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.save_snapshot_dialog) {
+                window.pywebview.api.save_snapshot_dialog(JSON.stringify(snapshot, null, 2));
+            } else {
+                // Keep local browser anchor fallback block just in case
+                const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const anchor = document.createElement('a');
+                anchor.href = url;
+                anchor.download = 'quantum_snapshot_' + Date.now() + '.json';
+                document.body.appendChild(anchor);
+                anchor.click();
+                anchor.remove();
+                URL.revokeObjectURL(url);
+            }
         }
 
         function toggleModal(show) {
@@ -410,36 +427,6 @@ experiment outputs are returned via synchronized asynchronous pipelines.</p>
             stateSyncInterval = setInterval(syncBackendState, 3000);
         }
 
-        document.getElementById('run-nisq-btn').addEventListener('click', function() {
-            const outputArea = document.getElementById('simulation-results');
-            const runBtn = document.getElementById('run-nisq-btn');
-
-            if (!window.pyBridge) return;
-            runBtn.innerText = '⏳ COMPILING MATRIX...';
-
-            window.pyBridge.run_nisq_experiment(function(response) {
-                if (response.ok) {
-                    const results = response.data;
-                    document.getElementById('out-hardware').innerText = results.status;
-                    document.getElementById('out-leakage').innerText = results.leakage;
-                    document.getElementById('out-fidelity').innerText = results.fidelity;
-                    document.getElementById('out-insight').innerText = results.insight;
-
-                    const statusColor = results.status === 'STABLE' ? '#00ff66' : results.status === 'DEGRADED' ? '#ffaa00' : '#ff5555';
-                    document.getElementById('out-hardware').style.color = statusColor;
-                    outputArea.style.display = 'block';
-                } else {
-                    console.error('Experiment failed:', response.error);
-                }
-                runBtn.innerText = '⚡ RUN NISQ EXPERIMENT';
-            });
-        });
-
-        document.getElementById('wipe-btn').addEventListener('click', function() {
-            if (window.pyBridge) window.pyBridge.trigger_native_logout();
-        });
-
-        // 🌉 DUAL RUNTIME TRACKER INTERCEPT HANDSHAKE
         function initOperationalBridge() {
             window.pyBridge.get_user_context(function(context) {
                 if (!context) {
@@ -452,9 +439,9 @@ experiment outputs are returned via synchronized asynchronous pipelines.</p>
             });
         }
 
-        // Check if running in the ultra-lightweight pywebview environment
-        if (window.pywebview && window.pywebview.api) {
-            console.log("🛰️ Lightweight System Web-Core Detected.");
+        // 🎯 THE KEY INTERCEPT CORRECTION: Wait explicitly for pywebview initialization injection!
+        window.addEventListener('pywebviewready', function() {
+            console.log("🛰️ System Web-Core Bridge Initialized safely.");
             window.pyBridge = {
                 get_user_context: function(cb) { window.pywebview.api.get_user_context().then(cb); },
                 trigger_native_logout: function() { window.pywebview.api.trigger_native_logout(); },
@@ -462,14 +449,38 @@ experiment outputs are returned via synchronized asynchronous pipelines.</p>
                 run_nisq_experiment: function(cb) { window.pywebview.api.run_nisq_experiment().then(cb); },
                 fetch_backend_state: function(cb) { window.pywebview.api.fetch_backend_state().then(cb); }
             };
-            initOperationalBridge();
-        } else {
-            // Fallback cleanly to classic PyQt QWebChannel if loaded locally or over development servers
-            new QWebChannel(qt.webChannelTransport, function(channel) {
-                window.pyBridge = channel.objects.pyBridge;
-                initOperationalBridge();
+
+            // Wire buttons cleanly inside the scope
+            document.getElementById('run-nisq-btn').addEventListener('click', function() {
+                const outputArea = document.getElementById('simulation-results');
+                const runBtn = document.getElementById('run-nisq-btn');
+
+                runBtn.innerText = '⏳ COMPILING MATRIX...';
+
+                window.pyBridge.run_nisq_experiment(function(response) {
+                    if (response.ok) {
+                        const results = response.data;
+                        document.getElementById('out-hardware').innerText = results.status;
+                        document.getElementById('out-leakage').innerText = results.leakage;
+                        document.getElementById('out-fidelity').innerText = results.fidelity;
+                        document.getElementById('out-insight').innerText = results.insight;
+
+                        const statusColor = results.status === 'STABLE' ? '#00ff66' : results.status === 'DEGRADED' ? '#ffaa00' : '#ff5555';
+                        document.getElementById('out-hardware').style.color = statusColor;
+                        outputArea.style.display = 'block';
+                    } else {
+                        console.error('Experiment failed:', response.error);
+                    }
+                    runBtn.innerText = '⚡ RUN NISQ EXPERIMENT';
+                });
             });
-        }
+
+            document.getElementById('wipe-btn').addEventListener('click', function() {
+                window.pyBridge.trigger_native_logout();
+            });
+
+            initOperationalBridge();
+        });
     </script>
 </body>
 </html>
