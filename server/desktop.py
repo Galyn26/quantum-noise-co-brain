@@ -201,7 +201,8 @@ class NativeBridge:
             self.perform_logout()
             return
 
-        if url.startswith(self.config.redirect_uri):
+        # 🎯 FIX: Changed .startswith() to an inclusive substring query to account for WebKit trailing slashes
+        if self.config.redirect_uri in url:
             parsed = urlparse(url)
             params = parse_qs(parsed.query)
             code = params.get("code", [None])[0]
@@ -291,14 +292,6 @@ class NativeBridge:
 
 
 def run_background_engine(window, bridge):
-    """
-    Runs isolated on its own independent background thread. 
-    Safe to boot runtimes and track background states without touching the UI canvas thread.
-    """
-    bridge.initialize_runtime(window)
-
-
-def run_background_engine(window, bridge):
     """Runs isolated on its own independent background thread."""
     bridge.initialize_runtime(window)
 
@@ -310,7 +303,7 @@ def main():
 
     window = webview.create_window(
         title="Quantum Noise Co-Brain Operator Console",
-        url="http://127.0.0.1:8443", # Gives it a real domain context for webkit tokens
+        url="http://127.0.0.1:8443", 
         js_api=bridge,
         width=1280,
         height=800,
@@ -318,10 +311,6 @@ def main():
         text_select=True
     )
 
-    # 🎯 THE SOLUTION: Listen exclusively for the handoff.
-    # When Auth0 sends a successful login, it hits the callback. 
-    # This handler wakes up ONLY when it sees that URL, captures it, 
-    # and routes you right into your app dashboard!
     def handle_navigation(w=None):
         url = window.get_current_url() or ""
         if "callback" in url:
@@ -329,12 +318,8 @@ def main():
             bridge.handle_url_shift(url)
 
     window.events.loaded += handle_navigation
-
-    # Start the worker thread safely
     webview.start(run_background_engine, (window, bridge), debug=False)
 
 
-if __name__ == "__main__":
-    main()
 if __name__ == "__main__":
     main()
