@@ -1,9 +1,26 @@
+import os
+import sys
+
+# 🛰️ Force QtWebEngineProcess Path Identification for Mac Bundles FIRST
+if getattr(sys, 'frozen', False) and sys.platform == 'darwin':
+    # Calculate the absolute path inside the bundled application structure
+    bundle_dir = os.path.dirname(sys.executable)
+    # Standard PyInstaller location for the engine process helper
+    qt_engine_path = os.path.join(bundle_dir, "..", "Frameworks", "QtWebEngineCore.framework", "Helpers", "QtWebEngineProcess.app", "Contents", "MacOS", "QtWebEngineProcess")
+    
+    # Alternate layout check (internal internal internal backup paths)
+    if not os.path.exists(qt_engine_path):
+        qt_engine_path = os.path.join(bundle_dir, "_internal", "PyQt5", "Qt5", "lib", "QtWebEngineCore.framework", "Helpers", "QtWebEngineProcess.app", "Contents", "MacOS", "QtWebEngineProcess")
+
+    # Force set the environment variable so the core module handshakes perfectly
+    os.environ["QTWEBENGINEPROCESS_PATH"] = os.path.abspath(qt_engine_path)
+    print(f"🎯 Target Engine Process Lock: {os.environ['QTWEBENGINEPROCESS_PATH']}")
+
+# Now it is safe to pull in your core dependencies safely
 import base64
 import hashlib
 import json
-import os
 import secrets
-import sys
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
