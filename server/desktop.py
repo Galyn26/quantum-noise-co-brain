@@ -303,25 +303,24 @@ def main():
 
     bridge = NativeBridge()
 
+    # 🎯 FIX: Swap "about:blank" for your actual local server origin.
+    # This allows WKWebView to accept and maintain secure Auth0 session cookies natively!
     window = webview.create_window(
         title="Quantum Noise Co-Brain Operator Console",
-        url="about:blank",
+        url="http://127.0.0.1:8443", 
         js_api=bridge,
         width=1280,
         height=800,
         min_size=(1024, 768),
-        text_select=True,  # Allows the UI fields to accept input smoothly
-        zoomable=False
+        text_select=True
     )
 
-    # 🎯 OPTIMIZED TRACKER: Only intercepts the exact local callback to capture the token, 
-    # ignoring all the messy intermediate Google/Auth0 login screen refreshes!
+    # Scoped callback tracker to catch the code token post-login
     window.events.loaded += lambda w=None: (
         bridge.handle_url_shift(window.get_current_url()) 
         if "desktop-callback" in window.get_current_url() else None
     )
 
-    # Start the isolated engine thread
     webview.start(run_background_engine, (window, bridge), debug=False)
 
 if __name__ == "__main__":
