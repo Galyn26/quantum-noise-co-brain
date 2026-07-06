@@ -59,9 +59,11 @@ jobs:
         pip install -r requirements_cross.txt
         pip install pyinstaller Pillow
 
-    # 🍏 FIXED: Mac uses logo.icns directly now so it doesn't try to read a PNG
+    # 🍏 BACKWARDS COMPATIBLE: Enforces deployment baseline to support your Mac 13 engine
     - name: Compile Linux and Mac Binaries
       if: matrix.os != 'windows-latest'
+      env:
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
       run: |
         if [ "${{ matrix.os }}" = "macos-latest" ]; then
           python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --icon="server/templates/logo.icns" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
@@ -69,10 +71,13 @@ jobs:
           python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain" --icon="server/templates/logo.png" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
         fi
 
-    - name: Compile Mac Binary (Intel Target)
+    # 🍏 BACKWARDS COMPATIBLE: Enforces deployment baseline targeting Intel/Universal slices for Mac 13
+    - name: Compile Mac Binary (Universal2 Fat Bundle)
       if: matrix.os == 'macos-latest'
-      run: python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain-Intel" --target-arch x86_64 --icon="server/templates/logo.icns" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
-   
+      env:
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+      run: python -m PyInstaller --clean --windowed --noconfirm --name="QuantumCoBrain-Universal" --target-arch universal2 --icon="server/templates/logo.icns" --add-data "server/templates/desktop.html:server/templates" server/desktop.py
+
     - name: Compile Windows Exe
       if: matrix.os == 'windows-latest'
       run: |
@@ -89,10 +94,10 @@ jobs:
         powershell Compress-Archive -Path dist\QuantumCoBrain\* -DestinationPath QuantumCoBrain-Windows-x64.zip
 
     - name: Package Mac Assets
-      if: matrix.os == 'macos-latest' || matrix.os == 'macos-14'
+      if: matrix.os == 'macos-latest'
       run: |
         cd dist && zip -r ../QuantumCoBrain-MacOS.zip QuantumCoBrain.app
-        cd dist && zip -r ../QuantumCoBrain-MacOS-Intel.zip QuantumCoBrain-Intel.app
+        cd dist && zip -r ../QuantumCoBrain-MacOS-Intel.zip QuantumCoBrain-Universal.app
 
     - name: Upload Native OS Asset to GitHub Release
       uses: softprops/action-gh-release@v2
