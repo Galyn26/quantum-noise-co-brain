@@ -24,7 +24,8 @@ class DesktopConfig:
 
     @property
     def redirect_uri(self) -> str:
-        return "http://127.0.0.1:8443/desktop-callback"
+        # 🎯 Switch from localhost to your secure Render domain
+        return "https://quantum-noise-co-brain-desktop.onrender.com/callback"
 
     @property
     def authorize_url(self) -> str:
@@ -313,7 +314,8 @@ def main():
 
     def handle_navigation(w=None):
         url = window.get_current_url() or ""
-        if "callback" in url:
+        # 🎯 Only wake up when the final token landing page actually hits the frame
+        if "quantum-noise-co-brain-desktop.onrender.com/callback" in url:
             print(f"📡 Auth0 Handshake Detected! Processing endpoint: {url}")
             bridge.handle_url_shift(url)
 
