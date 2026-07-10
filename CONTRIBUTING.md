@@ -15,7 +15,7 @@ We are actively looking for contributors across multiple disciplines:
 
 ### 🌌 1. Quantum Physics & Simulation Models
 * Expanding the NISQ noise simulation modules.
-* Developing advanced Pauli twirling calculations.
+* Implementing scalable Pauli-twirling and Randomized Benchmarking protocols for zero-noise extrapolation (ZNE).
 * Designing alternative error-mitigation or noise-filtration mathematical frameworks.
 * Enhancing the interactive WebGL Bloch sphere visualization.
 
