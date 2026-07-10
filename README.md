@@ -32,10 +32,10 @@ For engineers wanting to hack the underlying Python algorithms, run benchmarks, 
 #### Quickstart: Running the Noise Baseline
 Ensure you have Python 3.10+ initialized inside an isolated local virtual environment:
 ```bash
-pip install qiskit qiskit-aer scikit-learn
+pip install qiskit qiskit-aer qiskit-ibm-runtime scikit-learn
 ```
 
-* **Run Quantum Error**: Watch 5% sumulated bit-flip corrupt an entangled 2-qubit system in real time:
+* **Run Quantum Error**: Watch 5% simulated bit-flip corrupt an entangled 2-qubit system in real time:
 ```bash
 python3 noise_baseline.py
 ```
